@@ -1,19 +1,23 @@
 // MARK: - App entry point
 
+import SwiftData
 import SwiftUI
 import AnvilKit
 
 @main
 struct AnvilApp: App {
     @StateObject private var providerRegistry = ProviderRegistry.shared
+    @StateObject private var sessionStore = SessionStore.shared
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(providerRegistry)
+                .environmentObject(sessionStore)
                 .anvilTheme()
                 .frame(minWidth: 1100, minHeight: 750)
         }
+        .modelContainer(SwiftDataStack.shared.container)
         .windowStyle(.titleBar)
         .commands {
             CommandMenu("Providers") {

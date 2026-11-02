@@ -5,12 +5,12 @@ import AnvilKit
 
 struct SidebarView: View {
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var sessionStore: SessionStore
     @Binding var selectedSessionID: UUID?
-    @State private var sessions: [Session] = []
 
     var body: some View {
         List(selection: $selectedSessionID) {
-            ForEach(sessions) { session in
+            ForEach(sessionStore.sessions) { session in
                 SessionRow(session: session)
                     .tag(session.id)
             }
@@ -26,28 +26,17 @@ struct SidebarView: View {
             .padding()
             .background(themeManager.theme.surface)
         }
-        .onAppear(perform: loadSessions)
-    }
-
-    private func loadSessions() {
-        // TODO: load from SwiftData model context
-        sessions = [
-            Session(title: "Refactor authentication", provider: "opencode", model: "opencode-1"),
-            Session(title: "Build CLI tool in Swift", provider: "openai", model: "gpt-5"),
-            Session(title: "Matrix-themed terminal", provider: "anthropic", model: "claude-opus-4"),
-        ]
     }
 
     private func newSession() {
-        let s = Session(title: "New Session")
-        sessions.append(s)
-        selectedSessionID = s.id
+        _ = sessionStore.createSession()
     }
 }
 
 private struct SessionRow: View {
     let session: Session
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var sessionStore: SessionStore
 
     var body: some View {
         HStack(spacing: 10) {
@@ -58,7 +47,7 @@ private struct SessionRow: View {
                     .font(.subheadline)
                     .foregroundStyle(themeManager.theme.textPrimary)
                     .lineLimit(1)
-                Text(session.provider + " · " + session.model)
+                Text(session.provider + " · " + (session.model.isEmpty ? "—" : session.model))
                     .font(.caption2)
                     .foregroundStyle(themeManager.theme.textMuted)
                     .lineLimit(1)
@@ -67,5 +56,10 @@ private struct SessionRow: View {
         }
         .padding(.vertical, 4)
         .contentShape(Rectangle())
+        .contextMenu {
+            Button("Delete session", role: .destructive) {
+                sessionStore.deleteSession(session)
+            }
+        }
     }
 }

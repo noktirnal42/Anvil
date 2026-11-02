@@ -40,4 +40,43 @@ final class AnvilTests: XCTestCase {
         XCTAssertNil(AnvilTheme.warmMinimal.ambientGlyph)
         XCTAssertFalse(AnvilTheme.warmMinimal.scanline)
     }
+
+    func testCreateSessionPersists() {
+        let store = SessionStore.shared
+        let before = store.sessions.count
+        let s = store.createSession(title: "Test Session", provider: "openai", model: "gpt-5")
+        XCTAssertEqual(store.sessions.count, before + 1)
+        XCTAssertEqual(store.selectedSession?.id, s.id)
+        XCTAssertEqual(s.title, "Test Session")
+        XCTAssertEqual(s.provider, "openai")
+        XCTAssertEqual(s.model, "gpt-5")
+    }
+
+    func testAppendMessage() {
+        let store = SessionStore.shared
+        let s = store.createSession(title: "Msg Test")
+        store.appendMessage(to: s, role: "user", content: "hello", isComplete: true)
+        store.appendMessage(to: s, role: "assistant", content: "hi", isComplete: true)
+        XCTAssertEqual(s.messages.count, 2)
+        XCTAssertTrue(s.messages.contains { $0.role == "user" && $0.content == "hello" })
+        XCTAssertTrue(s.messages.contains { $0.role == "assistant" && $0.content == "hi" })
+        XCTAssertTrue(s.messages.allSatisfy { !$0.isStreaming })
+    }
+
+    func testUpdateLastMessage() {
+        let store = SessionStore.shared
+        let s = store.createSession(title: "Update Test")
+        store.appendMessage(to: s, role: "assistant", content: "partial", isStreaming: true, isComplete: false)
+        store.updateLastMessage(in: s, content: "partial + more", isStreaming: false, isComplete: true)
+        XCTAssertTrue(s.messages.contains { $0.content == "partial + more" })
+        XCTAssertTrue(s.messages.allSatisfy { !$0.isStreaming })
+        XCTAssertTrue(s.messages.allSatisfy { $0.isComplete })
+    }
+
+    func testDeleteSession() {
+        let store = SessionStore.shared
+        let s = store.createSession(title: "To Delete")
+        store.deleteSession(s)
+        XCTAssertFalse(store.sessions.contains { $0.id == s.id })
+    }
 }

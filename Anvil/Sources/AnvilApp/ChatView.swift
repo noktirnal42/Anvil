@@ -4,18 +4,19 @@ import SwiftUI
 import AnvilKit
 
 struct ChatView: View {
-    let sessionID: UUID
+    let session: Session
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var providerRegistry: ProviderRegistry
     @State private var inputText = ""
-    @State private var messages: [Message] = [
-        Message(role: "assistant", content: "Hi — I'm Anvil. Pick a model and start building.")
-    ]
+    @State private var streamingTask: Task<Void, Never>?
+    @State private var isStreaming = false
 
     var body: some View {
         VStack(spacing: 0) {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    ForEach(messages) { message in
+                    ForEach(session.messages) { message in
                         MessageBubble(message: message)
                     }
                 }
@@ -42,29 +43,88 @@ struct ChatView: View {
                     .onSubmit {
                         send()
                     }
-                Button(action: send) {
-                    Image(systemName: "paperplane.fill")
-                        .foregroundStyle(themeManager.theme.background)
-                        .frame(width: 36, height: 36)
-                        .background(themeManager.theme.accent)
-                        .clipShape(Circle())
+                    .disabled(isStreaming)
+                if isStreaming {
+                    Button(action: stop) {
+                        Image(systemName: "stop.fill")
+                            .foregroundStyle(themeManager.theme.background)
+                            .frame(width: 36, height: 36)
+                            .background(themeManager.theme.error)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button(action: send) {
+                        Image(systemName: "paperplane.fill")
+                            .foregroundStyle(themeManager.theme.background)
+                            .frame(width: 36, height: 36)
+                            .background(themeManager.theme.accent)
+                            .clipShape(Circle())
+                    }
+                    .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .buttonStyle(.plain)
                 }
-                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .buttonStyle(.plain)
             }
             .padding(10)
             .background(themeManager.theme.surfaceElevated)
         }
         .background(themeManager.theme.background)
+        .onAppear {
+            sessionStore.selectedSession = session
+        }
     }
 
     private func send() {
         let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
         inputText = ""
-        messages.append(Message(role: "user", content: text))
-        messages.append(Message(role: "assistant", content: "", isStreaming: true))
-        // TODO: stream from provider/OpenCodeBridge
+
+        streamingTask = Task { @MainActor in
+            let provider = providerRegistry.provider(id: session.provider) ?? providerRegistry.default
+
+            // Persist user message
+            _ = sessionStore.appendMessage(to: session, role: "user", content: text, isComplete: true)
+
+            // Start assistant streaming message
+            _ = sessionStore.appendMessage(to: session, role: "assistant",
+                                           content: "", isStreaming: true, isComplete: false)
+            isStreaming = true
+
+            let prior = session.messages
+            await ChatClient.shared.stream(session: session, provider: provider,
+                                           messages: prior,
+                                           onDelta: { [weak sessionStore] delta in
+                                            guard let sessionStore,
+                                                  let s = sessionStore.sessions.first(where: { $0.id == session.id }),
+                                                  let last = s.messages.last else { return }
+                                            let updated = last.content + delta
+                                            sessionStore.updateLastMessage(in: s,
+                                                                           content: updated,
+                                                                           isStreaming: true,
+                                                                           isComplete: false)
+                                           },
+                                           onComplete: { [weak sessionStore] in
+                                            guard let sessionStore,
+                                                  let s = sessionStore.sessions.first(where: { $0.id == session.id }),
+                                                  let last = s.messages.last else { return }
+                                            sessionStore.updateLastMessage(in: s,
+                                                                           content: last.content,
+                                                                           isStreaming: false,
+                                                                           isComplete: true)
+                                            isStreaming = false
+                                            streamingTask = nil
+                                           })
+        }
+    }
+
+    private func stop() {
+        streamingTask?.cancel()
+        streamingTask = nil
+        isStreaming = false
+        if let last = session.messages.last, last.isStreaming {
+            sessionStore.updateLastMessage(in: session, content: last.content,
+                                           isStreaming: false, isComplete: true)
+        }
     }
 }
 
