@@ -14,6 +14,7 @@ struct AnvilApp: App {
     @StateObject private var artifactStore = ArtifactStore.shared
     @StateObject private var fileIndex = FileIndexService.shared
     @StateObject private var axController = AXController.shared
+    @StateObject private var updateManager = UpdateManager.shared
     @State private var showQuickOpen = false
 
     var body: some Scene {
@@ -27,6 +28,7 @@ struct AnvilApp: App {
                 .environmentObject(artifactStore)
                 .environmentObject(fileIndex)
                 .environmentObject(axController)
+                .environmentObject(updateManager)
                 .anvilTheme()
                 .sheet(isPresented: $showQuickOpen) {
                     QuickOpenView()

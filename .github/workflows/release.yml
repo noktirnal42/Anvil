@@ -1,0 +1,46 @@
+name: Release Anvil
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Xcode 27 toolchain
+        run: |
+          sudo xcode-select -switch /Applications/Xcode_27.app
+          xcodebuild -version
+
+      - name: Install bun
+        uses: oven-sh/setup-bun@v1
+
+      - name: Build opencode-cli binary
+        run: |
+          git clone https://github.com/anomalyco/opencode.git .referencedata/opencode-cli
+          cd .referencedata/opencode-cli && bun install && bun build packages/cli/src/index.ts --compile --outfile=../Anvil/Sources/AnvilApp/Resources/opencode-cli
+
+      - name: Build Anvil + DMG
+        run: |
+          cd Anvil
+          chmod +x script/build-dmg.sh
+          ./script/build-dmg.sh --sign "${{ secrets.APPLE_DEV_IDENTITY }}" --notarize
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          TEAM_ID: ${{ secrets.TEAM_ID }}
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: Anvil/Anvil-*.dmg
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
