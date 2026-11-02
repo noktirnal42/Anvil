@@ -13,7 +13,8 @@ public final class SwiftDataStack {
 
     private init() {
         do {
-            container = try ModelContainer(for: Session.self, Message.self)
+            container = try ModelContainer(for: Session.self, Message.self,
+                                       Artifact.self, ArtifactVersion.self)
         } catch {
             fatalError("Failed to create SwiftData ModelContainer: \(error)")
         }

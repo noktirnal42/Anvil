@@ -11,6 +11,7 @@ struct AnvilApp: App {
     @StateObject private var agentRunner = AgentRunner.shared
     @StateObject private var mcpClient = MCPClient.shared
     @StateObject private var gitClient = GitClient.shared
+    @StateObject private var artifactStore = ArtifactStore.shared
 
     var body: some Scene {
         WindowGroup {
@@ -20,6 +21,7 @@ struct AnvilApp: App {
                 .environmentObject(agentRunner)
                 .environmentObject(mcpClient)
                 .environmentObject(gitClient)
+                .environmentObject(artifactStore)
                 .anvilTheme()
                 .frame(minWidth: 1100, minHeight: 750)
         }

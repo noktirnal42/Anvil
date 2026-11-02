@@ -20,9 +20,13 @@ struct ContentView: View {
                             .tabItem { Label("Chat", systemImage: "message") }
                         TerminalView()
                             .tabItem { Label("Terminal", systemImage: "terminal") }
-                        if let gitURL = gitWorkingDirectory {
-                            GitStatusView(workingDirectory: gitURL)
-                                .tabItem { Label("Git", systemImage: "branch") }
+                        Group {
+                            if let gitURL = gitWorkingDirectory {
+                                GitStatusView(workingDirectory: gitURL)
+                                    .tabItem { Label("Git", systemImage: "branch") }
+                            }
+                            ArtifactsView()
+                                .tabItem { Label("Artifacts", systemImage: "cube.transparent") }
                         }
                     }
                 } else {
