@@ -11,10 +11,17 @@ struct ContentView: View {
         NavigationSplitView {
             SidebarView(selectedSessionID: $selectedSessionID)
         } detail: {
-            if let session = sessionStore.selectedSession {
-                ChatView(session: session)
-            } else {
-                EmptyStateView()
+            Group {
+                if let session = sessionStore.selectedSession {
+                    TabView {
+                        ChatView(session: session)
+                            .tabItem { Label("Chat", systemImage: "message") }
+                        TerminalView()
+                            .tabItem { Label("Terminal", systemImage: "terminal") }
+                    }
+                } else {
+                    EmptyStateView()
+                }
             }
         }
         .onChange(of: selectedSessionID) { _, newID in
