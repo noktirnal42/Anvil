@@ -29,6 +29,8 @@ struct ContentView: View {
                                 .tabItem { Label("Artifacts", systemImage: "cube.transparent") }
                             FileTreeView()
                                 .tabItem { Label("Files", systemImage: "folder") }
+                            ComputerUseView()
+                                .tabItem { Label("Computer", systemImage: "desktopcomputer") }
                         }
                     }
                 } else {

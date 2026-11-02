@@ -13,6 +13,7 @@ struct AnvilApp: App {
     @StateObject private var gitClient = GitClient.shared
     @StateObject private var artifactStore = ArtifactStore.shared
     @StateObject private var fileIndex = FileIndexService.shared
+    @StateObject private var axController = AXController.shared
     @State private var showQuickOpen = false
 
     var body: some Scene {
@@ -25,6 +26,7 @@ struct AnvilApp: App {
                 .environmentObject(gitClient)
                 .environmentObject(artifactStore)
                 .environmentObject(fileIndex)
+                .environmentObject(axController)
                 .anvilTheme()
                 .sheet(isPresented: $showQuickOpen) {
                     QuickOpenView()
