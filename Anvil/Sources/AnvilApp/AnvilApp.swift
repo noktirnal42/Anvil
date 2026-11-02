@@ -12,6 +12,8 @@ struct AnvilApp: App {
     @StateObject private var mcpClient = MCPClient.shared
     @StateObject private var gitClient = GitClient.shared
     @StateObject private var artifactStore = ArtifactStore.shared
+    @StateObject private var fileIndex = FileIndexService.shared
+    @State private var showQuickOpen = false
 
     var body: some Scene {
         WindowGroup {
@@ -22,7 +24,11 @@ struct AnvilApp: App {
                 .environmentObject(mcpClient)
                 .environmentObject(gitClient)
                 .environmentObject(artifactStore)
+                .environmentObject(fileIndex)
                 .anvilTheme()
+                .sheet(isPresented: $showQuickOpen) {
+                    QuickOpenView()
+                }
                 .frame(minWidth: 1100, minHeight: 750)
         }
         .modelContainer(SwiftDataStack.shared.container)
@@ -34,6 +40,12 @@ struct AnvilApp: App {
                         // TODO: select provider for active session
                     }
                 }
+            }
+            CommandMenu("File") {
+                Button("Open file… (⌘P)") {
+                    showQuickOpen = true
+                }
+                .keyboardShortcut("p", modifiers: .command)
             }
         }
     }

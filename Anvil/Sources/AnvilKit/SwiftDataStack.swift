@@ -14,7 +14,8 @@ public final class SwiftDataStack {
     private init() {
         do {
             container = try ModelContainer(for: Session.self, Message.self,
-                                       Artifact.self, ArtifactVersion.self)
+                                       Artifact.self, ArtifactVersion.self,
+                                       FileRecord.self, IndexedFolder.self)
         } catch {
             fatalError("Failed to create SwiftData ModelContainer: \(error)")
         }
