@@ -8,8 +8,9 @@ struct ChatView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var providerRegistry: ProviderRegistry
+    @EnvironmentObject private var agentRunner: AgentRunner
+    @EnvironmentObject private var mcpClient: MCPClient
     @State private var inputText = ""
-    @State private var streamingTask: Task<Void, Never>?
     @State private var isStreaming = false
 
     var body: some View {
@@ -18,6 +19,30 @@ struct ChatView: View {
                 LazyVStack(alignment: .leading, spacing: 12) {
                     ForEach(session.messages) { message in
                         MessageBubble(message: message)
+                    }
+                    // Round in-progress indicator
+                    if isStreaming && !agentRunner.roundText.isEmpty {
+                        HStack(alignment: .top, spacing: 10) {
+                            Spacer(minLength: 60)
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(agentRunner.roundText.isEmpty ? "…" : agentRunner.roundText)
+                                    .foregroundStyle(themeManager.theme.textPrimary)
+                                    .padding(12)
+                                    .background(themeManager.theme.chatBubbleAssistant)
+                                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                HStack(spacing: 4) {
+                                    ForEach(0..<3) { i in
+                                        Circle()
+                                            .fill(themeManager.theme.accent)
+                                            .frame(width: 5, height: 5)
+                                            .scaleEffect(i == 0 ? 1.2 : 0.8)
+                                            .animation(.easeInOut(duration: 0.6).repeatForever().delay(0.2 * Double(i)), value: isStreaming)
+                                    }
+                                }
+                                .padding(.leading, 4)
+                            }
+                            Spacer(minLength: 60)
+                        }
                     }
                 }
                 .padding()
@@ -40,9 +65,7 @@ struct ChatView: View {
                     )
                     .foregroundStyle(themeManager.theme.textPrimary)
                     .submitLabel(.send)
-                    .onSubmit {
-                        send()
-                    }
+                    .onSubmit { send() }
                     .disabled(isStreaming)
                 if isStreaming {
                     Button(action: stop) {
@@ -69,6 +92,24 @@ struct ChatView: View {
             .background(themeManager.theme.surfaceElevated)
         }
         .background(themeManager.theme.background)
+        // Tool approval modal overlay
+        .overlay(
+            Group {
+                if let call = agentRunner.pendingToolCall {
+                    ZStack {
+                        Color.black.opacity(0.35)
+                            .ignoresSafeArea()
+                            .onTapGesture { /* dismiss on backdrop tap is disabled; must choose */ }
+                        ToolApprovalView(call: call,
+                                         onApprove: agentRunner.approveCurrentToolCall,
+                                         onDeny: agentRunner.denyCurrentToolCall(reason:))
+                    }
+                    .transition(.scale.combined(with: .opacity))
+                }
+            },
+            alignment: .center
+        )
+        .animation(.spring(), value: agentRunner.pendingToolCall != nil)
         .onAppear {
             sessionStore.selectedSession = session
         }
@@ -79,52 +120,21 @@ struct ChatView: View {
         guard !text.isEmpty else { return }
         inputText = ""
 
-        streamingTask = Task { @MainActor in
-            let provider = providerRegistry.provider(id: session.provider) ?? providerRegistry.default
+        let provider = providerRegistry.provider(id: session.provider) ?? providerRegistry.default
+        isStreaming = true
 
-            // Persist user message
-            _ = sessionStore.appendMessage(to: session, role: "user", content: text, isComplete: true)
-
-            // Start assistant streaming message
-            _ = sessionStore.appendMessage(to: session, role: "assistant",
-                                           content: "", isStreaming: true, isComplete: false)
-            isStreaming = true
-
-            let prior = session.messages
-            await ChatClient.shared.stream(session: session, provider: provider,
-                                           messages: prior,
-                                           onDelta: { [weak sessionStore] delta in
-                                            guard let sessionStore,
-                                                  let s = sessionStore.sessions.first(where: { $0.id == session.id }),
-                                                  let last = s.messages.last else { return }
-                                            let updated = last.content + delta
-                                            sessionStore.updateLastMessage(in: s,
-                                                                           content: updated,
-                                                                           isStreaming: true,
-                                                                           isComplete: false)
-                                           },
-                                           onComplete: { [weak sessionStore] in
-                                            guard let sessionStore,
-                                                  let s = sessionStore.sessions.first(where: { $0.id == session.id }),
-                                                  let last = s.messages.last else { return }
-                                            sessionStore.updateLastMessage(in: s,
-                                                                           content: last.content,
-                                                                           isStreaming: false,
-                                                                           isComplete: true)
-                                            isStreaming = false
-                                            streamingTask = nil
-                                           })
+        Task { @MainActor in
+            await agentRunner.run(session: session, provider: provider,
+                                  userMessage: text, store: sessionStore,
+                                  onComplete: {
+                                      isStreaming = false
+                                  })
         }
     }
 
     private func stop() {
-        streamingTask?.cancel()
-        streamingTask = nil
+        agentRunner.stop()
         isStreaming = false
-        if let last = session.messages.last, last.isStreaming {
-            sessionStore.updateLastMessage(in: session, content: last.content,
-                                           isStreaming: false, isComplete: true)
-        }
     }
 }
 
@@ -138,26 +148,41 @@ private struct MessageBubble: View {
                 Spacer(minLength: 60)
             }
             VStack(alignment: message.role == "user" ? .trailing : .leading, spacing: 4) {
-                Text(message.content.isEmpty ? "…" : message.content)
-                    .foregroundStyle(message.role == "user" ? themeManager.theme.background : themeManager.theme.textPrimary)
-                    .padding(12)
-                    .background(message.role == "user" ? themeManager.theme.chatBubbleUser : themeManager.theme.chatBubbleAssistant)
-                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14, style: .continuous)
-                            .stroke(themeManager.theme.border, lineWidth: 0.5)
-                    )
-                if message.role == "assistant" && message.isStreaming {
-                    HStack(spacing: 4) {
-                        ForEach(0..<3) { i in
-                            Circle()
-                                .fill(themeManager.theme.accent)
-                                .frame(width: 5, height: 5)
-                                .scaleEffect(i == 0 ? 1.2 : 0.8)
-                                .animation(.easeInOut(duration: 0.6).repeatForever().delay(0.2 * Double(i)), value: message.isStreaming)
+                // Tool results render distinctly
+                if message.role == "tool" {
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack {
+                            Image(systemName: "wrench.and.screwdriver")
+                                .foregroundStyle(themeManager.theme.textMuted)
+                            Text(message.toolName ?? "tool")
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .foregroundStyle(themeManager.theme.textMuted)
+                            if message.toolCallId != nil {
+                                Text(message.toolCallId!)
+                                    .font(.caption2)
+                                    .foregroundStyle(themeManager.theme.textMuted)
+                            }
+                            Spacer()
                         }
+                        Text(message.content.isEmpty ? "…" : message.content)
+                            .font(.system(.body, design: .monospaced))
+                            .foregroundStyle(themeManager.theme.textSecondary)
+                            .padding(10)
+                            .background(themeManager.theme.codeBlockBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
-                    .padding(.leading, 4)
+                    .padding(.horizontal, 8)
+                } else {
+                    Text(message.content.isEmpty ? "…" : message.content)
+                        .foregroundStyle(message.role == "user" ? themeManager.theme.background : themeManager.theme.textPrimary)
+                        .padding(12)
+                        .background(message.role == "user" ? themeManager.theme.chatBubbleUser : themeManager.theme.chatBubbleAssistant)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(themeManager.theme.border, lineWidth: 0.5)
+                        )
                 }
             }
             if message.role != "user" {

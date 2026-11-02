@@ -1,0 +1,119 @@
+{
+  "" : {
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/Anvil-primary.dia",
+    "emit-module-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/Anvil-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/Anvil-primary-emit-module.dia",
+    "pch" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/Anvil-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/Anvil-primary.swiftdeps"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/GeneratedAssetSymbols~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/DerivedSources/resource_bundle_accessor.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/resource_bundle_accessor~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/AnvilApp.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/AnvilApp~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/ChatView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ChatView~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/ContentView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ContentView~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/MCPSettingsView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/MCPSettingsView~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/SettingsView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SettingsView~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/SidebarView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/SidebarView~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/TerminalView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/TerminalView~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/ThemePicker.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ThemePicker~partial.swiftmodule"
+  },
+  "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/Sources/AnvilApp/ToolApprovalView.swift" : {
+    "const-values" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.swiftconstvalues",
+    "dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.d",
+    "diagnostics" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.dia",
+    "index-unit-output-path" : "/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.o",
+    "llvm-bc" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.bc",
+    "object" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.o",
+    "swift-dependencies" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView.swiftdeps",
+    "swiftmodule" : "/Volumes/Artificial_Intelligence_Machine_Learning/dev/OpenCodeNext/Anvil/.build/out/Intermediates.noindex/Anvil.build/Debug/Anvil-p.build/Objects-normal/arm64/ToolApprovalView~partial.swiftmodule"
+  }
+}

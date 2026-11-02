@@ -1,0 +1,17 @@
+Target dependency graph (6 targets)
+Target 'AllIncludingTests' in project 'Aggregate'
+➜ Explicit dependency on target 'AnvilTests-product' in project 'Anvil'
+➜ Dependency on target 'AnvilTests-product' in project 'Anvil' via transitive dependency through 'AnvilTests-test-runner'
+➜ Explicit dependency on target 'Anvil-product' in project 'Anvil'
+➜ Explicit dependency on target 'Anvil_AnvilApp' in project 'Anvil'
+➜ Explicit dependency on target 'AnvilKit-product' in project 'Anvil'
+➜ Explicit dependency on target 'AnvilKit' in project 'Anvil'
+Target 'AnvilKit-product' in project 'Anvil'
+➜ Explicit dependency on target 'AnvilKit' in project 'Anvil'
+Target 'Anvil-product' in project 'Anvil'
+➜ Explicit dependency on target 'Anvil_AnvilApp' in project 'Anvil'
+➜ Explicit dependency on target 'AnvilKit' in project 'Anvil'
+Target 'Anvil_AnvilApp' in project 'Anvil' (no dependencies)
+Target 'AnvilTests-product' in project 'Anvil'
+➜ Explicit dependency on target 'AnvilKit' in project 'Anvil'
+Target 'AnvilKit' in project 'Anvil' (no dependencies)

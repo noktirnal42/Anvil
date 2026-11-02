@@ -8,12 +8,16 @@ import AnvilKit
 struct AnvilApp: App {
     @StateObject private var providerRegistry = ProviderRegistry.shared
     @StateObject private var sessionStore = SessionStore.shared
+    @StateObject private var agentRunner = AgentRunner.shared
+    @StateObject private var mcpClient = MCPClient.shared
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(providerRegistry)
                 .environmentObject(sessionStore)
+                .environmentObject(agentRunner)
+                .environmentObject(mcpClient)
                 .anvilTheme()
                 .frame(minWidth: 1100, minHeight: 750)
         }
