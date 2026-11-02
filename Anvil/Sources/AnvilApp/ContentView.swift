@@ -5,7 +5,9 @@ import AnvilKit
 
 struct ContentView: View {
     @EnvironmentObject private var sessionStore: SessionStore
+    @EnvironmentObject private var gitClient: GitClient
     @State private var selectedSessionID: UUID?
+    @State private var gitWorkingDirectory: URL?
 
     var body: some View {
         NavigationSplitView {
@@ -18,6 +20,10 @@ struct ContentView: View {
                             .tabItem { Label("Chat", systemImage: "message") }
                         TerminalView()
                             .tabItem { Label("Terminal", systemImage: "terminal") }
+                        if let gitURL = gitWorkingDirectory {
+                            GitStatusView(workingDirectory: gitURL)
+                                .tabItem { Label("Git", systemImage: "branch") }
+                        }
                     }
                 } else {
                     EmptyStateView()
@@ -26,6 +32,11 @@ struct ContentView: View {
         }
         .onChange(of: selectedSessionID) { _, newID in
             sessionStore.selectedSession = sessionStore.sessions.first { $0.id == newID }
+        }
+        .onAppear {
+            if gitWorkingDirectory == nil {
+                gitWorkingDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            }
         }
     }
 }
