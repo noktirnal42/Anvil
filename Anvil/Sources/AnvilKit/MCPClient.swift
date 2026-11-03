@@ -134,10 +134,49 @@ public final class MCPClient: NSObject, ObservableObject {
 
     // MARK: - Tool call
 
+    /// Call a tool by namespaced name (e.g. "filesystem.read_file"). Looks up
+    /// which MCP server provides the tool and forwards the call.
+    public func callToolByName(_ namespacedName: String, arguments: [String: Any] = [:]) async -> [String: Any]? {
+        let serverId = toolServerMap[namespacedName]
+        guard let serverId, let server = servers[serverId] else {
+            print("[Anvil MCP] No server provides tool '\(namespacedName)'")
+            return nil
+        }
+        return await server.callTool(name: toolName(from: namespacedName),
+                                     arguments: arguments)
+    }
+
     public func callTool(serverId: UUID, toolName: String, arguments: [String: Any] = [:]) async -> [String: Any]? {
         guard let server = servers[serverId] else { return nil }
         return await server.callTool(name: toolName, arguments: arguments)
     }
+
+    /// Strip the server prefix from a namespaced tool name.
+    private func toolName(from namespacedName: String) -> String {
+        if let dot = namespacedName.firstIndex(of: ".") {
+            return String(namespacedName[dot...].dropFirst())
+        }
+        return namespacedName
+    }
+
+    /// Rebuild the tool name → serverId map whenever tools are discovered.
+    internal func rebuildToolServerMap() {
+        toolServerMap.removeAll()
+        for config in configs where config.isEnabled {
+            guard let server = servers[config.id] else { continue }
+            // We don't store tools per-server here; instead read from published tools.
+        }
+        for tool in tools {
+            toolServerMap[tool.name] = tool.serverId
+            // Also register a namespaced variant: serverName.toolName
+            if let config = configs.first(where: { $0.id == tool.serverId }) {
+                toolServerMap["\(config.name).\(tool.name)"] = tool.serverId
+            }
+        }
+    }
+
+    // tool name → server id
+    private var toolServerMap: [String: UUID] = [:]
 
     internal func nextId() -> Int {
         nextRequestId += 1
@@ -155,6 +194,7 @@ public final class MCPClient: NSObject, ObservableObject {
 
     internal func receivedTools(_ id: UUID, _ tools: [MCPTool]) {
         self.tools = (self.tools.filter { $0.serverId != id }) + tools
+        rebuildToolServerMap()
     }
 }
 

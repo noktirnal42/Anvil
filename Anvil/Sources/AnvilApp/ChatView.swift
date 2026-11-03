@@ -124,13 +124,10 @@ struct ChatView: View {
         let descriptor = providerRegistry.provider(id: session.provider) ?? providerRegistry.default
         isStreaming = true
 
-        // Resolve the native provider adapter for this session's provider
-        let adapter = adapterRegistry.adapter(for: session.provider)
-        nativeEngine.adapter = adapter
-
         Task { @MainActor in
-            await nativeEngine.run(session: session, userMessage: text,
-                                   store: sessionStore,
+            await nativeEngine.run(session: session, descriptor: descriptor,
+                                   model: session.model,
+                                   userMessage: text, store: sessionStore,
                                    onComplete: {
                                        isStreaming = false
                                    })

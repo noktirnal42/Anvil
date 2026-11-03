@@ -17,13 +17,11 @@ public final class NativeSessionEngine: ObservableObject {
     /// The assistant's accumulated text for the current round.
     @Published public var roundText: String = ""
 
-    /// The active provider adapter. Set by the UI when a session's provider
-    /// is chosen; defaults to the OpenCode-compatible adapter.
-    public var adapter: ProviderAdapter?
-
     private var currentTask: Task<Void, Never>?
     private var decisionContinuation: CheckedContinuation<ToolCallDecision, Never>?
     public var pendingToolCall: ToolCall?
+
+    private let adapterRegistry = ProviderAdapterRegistry.shared
 
     public enum ToolCallDecision: Sendable {
         case approve
@@ -53,6 +51,8 @@ public final class NativeSessionEngine: ObservableObject {
     ///   - store: SessionStore for persistence
     ///   - onComplete: called when the full loop finishes
     public func run(session: Session,
+                    descriptor: ProviderDescriptor,
+                    model: String,
                     userMessage: String,
                     store: SessionStore,
                     onComplete: @escaping () -> Void) async {
@@ -60,7 +60,7 @@ public final class NativeSessionEngine: ObservableObject {
         isRunning = true
         defer { isRunning = false }
 
-        guard let adapter else {
+        guard let adapter = adapterRegistry.adapter(for: descriptor.id) else {
             onComplete()
             return
         }
@@ -81,7 +81,8 @@ public final class NativeSessionEngine: ObservableObject {
             guard !Task.isCancelled else { onComplete(); return }
 
             roundText = ""
-            let result = await streamRound(adapter: adapter, history: history, store: store)
+            let result = await streamRound(adapter: adapter, descriptor: descriptor,
+                                           model: model, history: history, store: store)
 
             // Append assistant message if there's text
             if !result.text.isEmpty {
@@ -123,7 +124,8 @@ public final class NativeSessionEngine: ObservableObject {
 
         // Exhausted tool rounds → final synthesis turn (no tools)
         roundText = ""
-        let synthesis = await streamRound(adapter: adapter, history: history, store: store,
+        let synthesis = await streamRound(adapter: adapter, descriptor: descriptor,
+                                          model: model, history: history, store: store,
                                           synthesis: true)
         if !synthesis.text.isEmpty {
             history.append(ProviderMessage(role: "assistant", content: synthesis.text))
@@ -135,7 +137,8 @@ public final class NativeSessionEngine: ObservableObject {
 
     // MARK: - Single streaming round
 
-    private func streamRound(adapter: ProviderAdapter, history: [ProviderMessage],
+    private func streamRound(adapter: ProviderAdapter, descriptor: ProviderDescriptor,
+                             model: String, history: [ProviderMessage],
                              store: SessionStore, synthesis: Bool = false)
         async -> StreamResult {
         var text = ""
@@ -143,7 +146,7 @@ public final class NativeSessionEngine: ObservableObject {
 
         roundText = ""
 
-        await adapter.stream(messages: history,
+        await adapter.stream(descriptor: descriptor, model: model, messages: history,
                              onTextDelta: { [weak self] chunk in
                                  text += chunk
                                  Task { @MainActor in
@@ -193,12 +196,9 @@ public final class NativeSessionEngine: ObservableObject {
     }
 
     private func executeToolCall(call: ToolCall) async -> ToolCallResult {
-        guard let serverId = call.serverId else {
-            return ToolCallResult(callId: call.id, name: call.name,
-                                  output: "no MCP server bound to tool", isError: true)
-        }
-        let output = await MCPClient.shared.callTool(
-            serverId: serverId, toolName: call.name, arguments: call.arguments ?? [:])
+        // Route by namespaced name (e.g. "filesystem.read_file") or bare name.
+        let output = await MCPClient.shared.callToolByName(call.name,
+                                                           arguments: call.arguments ?? [:])
         if let dict = output, let content = dict["content"] as? String {
             return ToolCallResult(callId: call.id, name: call.name, output: content)
         } else {

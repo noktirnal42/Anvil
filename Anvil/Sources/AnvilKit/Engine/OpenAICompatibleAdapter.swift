@@ -146,10 +146,10 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
 
     /// Convenience: stream against a ProviderDescriptor + session model,
     /// resolving the API key from Keychain.
-    func stream(descriptor: ProviderDescriptor, model: String,
-                messages: [ProviderMessage],
-                onTextDelta: @escaping (String) -> Void,
-                onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
+    public func stream(descriptor: ProviderDescriptor, model: String,
+                       messages: [ProviderMessage],
+                       onTextDelta: @escaping (String) -> Void,
+                       onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
         let baseURL = descriptor.baseURL ?? ""
         let apiKey: String?
         if descriptor.requiresAPIKey {

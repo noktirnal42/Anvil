@@ -29,7 +29,9 @@ public final class ProviderAdapterRegistry: ObservableObject {
         }
         // OpenCode's embedded server speaks OpenAI-compatible /chat/completions
         register(openAICompatible, for: "opencode")
-        // TODO (v2.0 phase 2): AnthropicAdapter, GoogleGeminiAdapter,
-        // AppleFoundationAdapter
+        // Native adapters (no CLI subprocess)
+        register(AnthropicAdapter.shared, for: "anthropic")
+        register(GoogleGeminiAdapter.shared, for: "google-gemini")
+        register(AppleFoundationAdapter.shared, for: "apple-foundation")
     }
 }

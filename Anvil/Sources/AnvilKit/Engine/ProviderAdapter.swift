@@ -75,6 +75,14 @@ public protocol ProviderAdapter: AnyObject {
                 onTextDelta: @escaping (String) -> Void,
                 onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult
 
+    /// Stream against a specific provider descriptor (resolves baseURL, model,
+    /// and API key from Keychain). Default implementation calls
+    /// `stream(to:model:apiKey:onTextDelta:onToolCalls:)`.
+    func stream(descriptor: ProviderDescriptor, model: String,
+                messages: [ProviderMessage],
+                onTextDelta: @escaping (String) -> Void,
+                onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult
+
     /// Optional: fetch the model catalog for this provider.
     func listModels() async -> [ModelDescriptor]
 }
@@ -82,4 +90,12 @@ public protocol ProviderAdapter: AnyObject {
 // Default: listModels returns empty (provider may not expose a catalog).
 extension ProviderAdapter {
     public func listModels() async -> [ModelDescriptor] { [] }
+
+    public func stream(descriptor: ProviderDescriptor, model: String,
+                       messages: [ProviderMessage],
+                       onTextDelta: @escaping (String) -> Void,
+                       onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
+        // Base default: no endpoint knowledge; subclasses override.
+        return StreamResult()
+    }
 }
