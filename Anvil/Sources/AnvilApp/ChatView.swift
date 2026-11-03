@@ -54,6 +54,14 @@ struct ChatView: View {
 
             Divider().background(themeManager.theme.divider)
 
+            HStack {
+                ModelPicker(session: session)
+                Spacer()
+            }
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+            .background(themeManager.theme.surfaceElevated)
+
             HStack(spacing: 10) {
                 TextField("Message Anvil…", text: $inputText, axis: .vertical)
                     .textFieldStyle(.plain)

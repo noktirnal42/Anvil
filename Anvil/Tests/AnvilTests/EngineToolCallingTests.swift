@@ -82,6 +82,28 @@ final class EngineToolCallingTests: XCTestCase {
         MockURLProtocol.statusCode = 200
     }
 
+    func testListModelsParsesOpenAIStyleCatalogSorted() async {
+        MockURLProtocol.responseBody = Data("{\"data\":[{\"id\":\"gpt-b\"},{\"id\":\"gpt-a\"}]}".utf8)
+        let descriptor = ProviderDescriptor(id: "test-openai", name: "Test",
+                                            baseURL: "https://mock.test/v1", requiresAPIKey: false)
+
+        let models = await OpenAICompatibleAdapter.shared.listModels(for: descriptor)
+
+        XCTAssertEqual(models.map(\.id), ["gpt-a", "gpt-b"])
+        XCTAssertTrue(models.allSatisfy { $0.providerId == "test-openai" })
+    }
+
+    func testListModelsReturnsEmptyOnHTTPFailure() async {
+        MockURLProtocol.statusCode = 500
+        MockURLProtocol.responseBody = Data("oops".utf8)
+        let descriptor = ProviderDescriptor(id: "test-openai", name: "Test",
+                                            baseURL: "https://mock.test/v1", requiresAPIKey: false)
+
+        let models = await OpenAICompatibleAdapter.shared.listModels(for: descriptor)
+
+        XCTAssertTrue(models.isEmpty)
+    }
+
     func testHTTPErrorIsReportedWithProviderDetail() async {
         MockURLProtocol.statusCode = 401
         MockURLProtocol.responseBody = Data("{\"error\":\"bad key\"}".utf8)

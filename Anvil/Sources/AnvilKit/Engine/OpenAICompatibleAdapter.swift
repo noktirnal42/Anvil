@@ -146,8 +146,44 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
     }
 
     public func listModels() async -> [ModelDescriptor] {
-        // Implemented per provider in v2.0 phase 2 (fetch /v1/models).
+        // The protocol method has no endpoint; use listModels(for:) instead.
         []
+    }
+
+    /// Fetches GET {baseURL}/models. Returns an empty list on any failure so the
+    /// picker can fall back to manual model entry.
+    public func listModels(for descriptor: ProviderDescriptor) async -> [ModelDescriptor] {
+        guard let base = descriptor.baseURL, !base.isEmpty,
+              let url = URL(string: base.hasSuffix("/") ? base + "models" : base + "/models") else {
+            return []
+        }
+        var request = URLRequest(url: url)
+        if descriptor.requiresAPIKey,
+           let apiKey = try? KeychainStore.shared.get(descriptor.id), !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
+        do {
+            let (data, response) = try await session.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                return []
+            }
+            return Self.parseModels(data, providerId: descriptor.id)
+        } catch {
+            return []
+        }
+    }
+
+    /// Parses the OpenAI-style `{"data": [{"id": ...}]}` model list.
+    static func parseModels(_ data: Data, providerId: String) -> [ModelDescriptor] {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let items = json["data"] as? [[String: Any]] else {
+            return []
+        }
+        return items.compactMap { item in
+            guard let id = item["id"] as? String, !id.isEmpty else { return nil }
+            return ModelDescriptor(id: id, name: id, providerId: providerId)
+        }
+        .sorted { $0.id < $1.id }
     }
 
     // MARK: - Request encoding (internal, covered by tests)
