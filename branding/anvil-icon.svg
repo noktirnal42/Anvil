@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#15171a"/>
+      <stop offset="1" stop-color="#070908"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.36" r="0.5">
+      <stop offset="0" stop-color="#00ff66" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#00ff66" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="iron" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4a4f55"/>
+      <stop offset="1" stop-color="#262a2e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="224" fill="url(#bg)"/>
+  <rect width="1024" height="1024" rx="224" fill="url(#glow)"/>
+  <rect x="2" y="2" width="1020" height="1020" rx="222" fill="none" stroke="#00ff66" stroke-opacity="0.25" stroke-width="4"/>
+  <!-- sparks -->
+  <g stroke="#00ff66" stroke-width="22" stroke-linecap="round" fill="none">
+    <line x1="512" y1="300" x2="512" y2="200"/>
+    <line x1="430" y1="312" x2="382" y2="236"/>
+    <line x1="594" y1="312" x2="642" y2="236"/>
+    <line x1="350" y1="352" x2="290" y2="300"/>
+    <line x1="674" y1="352" x2="734" y2="300"/>
+  </g>
+  <!-- anvil -->
+  <path d="M236 356 L134 386 Q116 392 134 400 L236 424 Z" fill="url(#iron)"/>
+  <path d="M236 352 L788 352 Q812 352 812 376 L812 404 Q812 420 796 422 L236 422 Q212 420 212 404 L212 376 Q212 352 236 352 Z" fill="url(#iron)"/>
+  <path d="M236 352 L788 352 Q812 352 812 376 L812 380 L212 380 L212 376 Q212 352 236 352 Z" fill="#00ff66" fill-opacity="0.55"/>
+  <path d="M300 422 L724 422 L690 610 L334 610 Z" fill="url(#iron)"/>
+  <path d="M334 610 L690 610 L736 700 L288 700 Z" fill="#33383d"/>
+  <rect x="256" y="700" width="512" height="66" rx="22" fill="#262a2e"/>
+  <rect x="256" y="700" width="512" height="10" rx="5" fill="#00ff66" fill-opacity="0.35"/>
+</svg>

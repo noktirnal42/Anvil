@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Anvil — native macOS agent harness</title>
+<meta name="description" content="Anvil is a native macOS agent harness: Swift 6 + SwiftUI, local and cloud models, artifacts, computer use, git, terminal, and MCP tools.">
+<meta property="og:title" content="Anvil — native macOS agent harness">
+<meta property="og:description" content="Native Swift 6 + SwiftUI agent harness for macOS. Local and cloud models, artifacts, computer use, git, terminal and MCP.">
+<meta property="og:image" content="assets/social-preview.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/anvil-icon.svg" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #070908;
+    --panel: #0f1311;
+    --line: #1d2a22;
+    --text: #e8ffe9;
+    --muted: #8a9a8e;
+    --accent: #00ff66;
+    --accent-dim: #0c7a3a;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --bg: #f4f8f5; --panel: #ffffff; --line: #d6e3da; --text: #0b1a10; --muted: #4f6357; --accent: #0a8f3d; --accent-dim: #0a8f3d; }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 16px; }
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--mono); font-weight: 700; color: var(--text); }
+  .brand img { width: 32px; height: 32px; border-radius: 8px; }
+  nav .links a { color: var(--muted); margin-left: 20px; font-size: 14px; }
+  .hero { padding: 64px 0 40px; text-align: center; }
+  .hero img { width: 144px; height: 144px; border-radius: 32px; box-shadow: 0 0 60px rgba(0,255,102,.18); }
+  h1 { font-family: var(--mono); font-size: clamp(34px, 6vw, 60px); margin: 24px 0 12px; letter-spacing: -0.02em; }
+  .tagline { font-size: clamp(17px, 2.4vw, 21px); color: var(--muted); max-width: 680px; margin: 0 auto; }
+  .cta { margin-top: 28px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-block; padding: 12px 20px; border-radius: 10px; font-weight: 600; font-size: 15px; border: 1px solid var(--accent); }
+  .btn.primary { background: var(--accent); color: #04140a; }
+  .btn.ghost { color: var(--accent); }
+  .btn:hover { text-decoration: none; opacity: .9; }
+  .term {
+    margin: 40px auto 0; max-width: 760px; text-align: left;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden;
+  }
+  .term-bar { padding: 10px 14px; border-bottom: 1px solid var(--line); display: flex; gap: 7px; }
+  .term-bar i { width: 11px; height: 11px; border-radius: 50%; background: var(--line); display: block; }
+  .term pre { margin: 0; padding: 18px 20px; font: 14px/1.7 var(--mono); color: var(--text); overflow-x: auto; white-space: pre; }
+  .term .p { color: var(--accent); }
+  .term .m { color: var(--muted); }
+  section { padding: 56px 0; }
+  h2 { font-family: var(--mono); font-size: clamp(24px, 3.4vw, 32px); margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 28px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .card h3 { margin: 0 0 6px; font-size: 17px; color: var(--accent); font-family: var(--mono); }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .status { border-left: 3px solid var(--accent); padding: 4px 16px; background: var(--panel); border-radius: 0 10px 10px 0; }
+  .status li { margin: 6px 0; color: var(--muted); }
+  .status ul { padding-left: 18px; margin: 10px 0; }
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 14px; }
+  footer .wrap { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  @media (max-width: 640px) {
+    nav .links a { margin-left: 12px; }
+    .hero { padding-top: 40px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav>
+    <a class="brand" href="#top"><img src="assets/anvil-icon.svg" alt="" width="32" height="32">Anvil</a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#status">Status</a>
+      <a href="https://github.com/noktirnal42/Anvil">GitHub</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <img src="assets/anvil-icon.svg" alt="Anvil app icon">
+    <h1>Anvil</h1>
+    <p class="tagline">A native macOS agent harness. Swift 6 and SwiftUI, local and cloud models, artifacts, computer use, git and terminal, all in one app.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/noktirnal42/Anvil">View on GitHub</a>
+      <a class="btn ghost" href="#status">Project status</a>
+    </div>
+    <div class="term" aria-label="Build and run">
+      <div class="term-bar"><i></i><i></i><i></i></div>
+<pre><span class="p">$</span> git clone https://github.com/noktirnal42/Anvil.git
+<span class="p">$</span> cd Anvil
+<span class="p">$</span> swift build
+<span class="m">Build complete!</span>
+<span class="p">$</span> open Package.swift   <span class="m"># opens in Xcode 27</span></pre>
+    </div>
+  </header>
+
+  <section id="features">
+    <h2>Everything in one native window</h2>
+    <p class="sub">Built for macOS with native controls, Keychain-backed secrets, and a theme system that includes a Matrix mode.</p>
+    <div class="grid">
+      <div class="card"><h3>Artifacts</h3><p>Code, Markdown, and HTML outputs kept with version history.</p></div>
+      <div class="card"><h3>Quick open</h3><p>File index and quick-open that search the project as you type.</p></div>
+      <div class="card"><h3>Computer use</h3><p>WebKit browser and Accessibility-based control of the desktop, with approval prompts.</p></div>
+      <div class="card"><h3>Git status</h3><p>See changed files and branches without leaving the app.</p></div>
+      <div class="card"><h3>Terminal</h3><p>A real PTY terminal next to your chat.</p></div>
+      <div class="card"><h3>MCP tools</h3><p>Connect Model Context Protocol servers and approve each tool call.</p></div>
+      <div class="card"><h3>Local and cloud models</h3><p>Providers for OpenAI-compatible endpoints, plus Anthropic and Google Gemini. Local servers such as LM Studio and Ollama work too.</p></div>
+      <div class="card"><h3>Themes</h3><p>Warm minimal, graphite, terminal heritage, and Matrix Techy.</p></div>
+    </div>
+  </section>
+
+  <section id="status">
+    <h2>Project status</h2>
+    <p class="sub">Anvil is under active development. Here is where things stand.</p>
+    <div class="status">
+      <ul>
+        <li><strong>Shipping now:</strong> the v1 app, which runs the OpenCode CLI as an embedded server.</li>
+        <li><strong>In progress (v2.0):</strong> a native Swift session engine that talks to model providers directly, removing the CLI dependency.</li>
+        <li><strong>Planned:</strong> notarized DMG releases and automatic updates.</li>
+      </ul>
+    </div>
+  </section>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 noktirnal42. All rights reserved. Proprietary license — see <a href="https://github.com/noktirnal42/Anvil/blob/main/LICENSE">LICENSE</a>.</span>
+    <span><a href="https://github.com/noktirnal42/Anvil">GitHub</a></span>
+  </div>
+</footer>
+</body>
+</html>
