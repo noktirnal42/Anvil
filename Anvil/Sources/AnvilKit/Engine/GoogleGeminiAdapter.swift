@@ -16,43 +16,47 @@ public final class GoogleGeminiAdapter: NSObject, ProviderAdapter {
                                                    supportsStreaming: true,
                                                    supportsSystemPrompt: false)
 
-    private let session = URLSession(configuration: .default)
+    /// Internal so tests can route requests through a mock URLProtocol.
+    var session = URLSession(configuration: .default)
 
     public func stream(messages: [ProviderMessage],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
-        fatalError("Use stream(to:model:apiKey:) with explicit credentials.")
+        return StreamResult(error: "Gemini needs an explicit endpoint; use stream(to:).")
     }
 
     public func stream(to baseURL: String, model: String, apiKey: String?,
                        messages: [ProviderMessage],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
-        // Gemini expects the API key as a query parameter and the model in the path.
-        let keyParam = apiKey.map { "?key=\($0)" } ?? ""
-        let urlString = "\(baseURL)\(keyParam)"
-        guard let url = URL(string: urlString) else { return StreamResult() }
+        // The model belongs in the path; streaming needs the SSE variant.
+        let root = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
+        let endpoint = "\(root)/models/\(model):streamGenerateContent?alt=sse"
+        guard let url = URL(string: endpoint) else {
+            return StreamResult(error: "Invalid endpoint URL: \(baseURL)")
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // The key travels in a header, not the URL, so it stays out of logs.
+        if let apiKey, !apiKey.isEmpty {
+            request.setValue(apiKey, forHTTPHeaderField: "x-goog-api-key")
+        }
 
-        // Convert messages to Gemini contents
+        // Gemini uses "user" and "model" roles. Only plain text turns are sent;
+        // tool turns are not offered on this path yet, so they are skipped.
         var contents: [[String: Any]] = []
         var systemInstruction: [String: Any]?
         for msg in messages {
             if msg.role == "system" {
-                systemInstruction = [
-                    "parts": [["text": msg.content]]
-                ]
-            } else {
-                var role = msg.role
-                if role == "tool" { role = "function" }
-                contents.append([
-                    "role": role,
-                    "parts": [["text": msg.content]]
-                ])
+                systemInstruction = ["parts": [["text": msg.content]]]
+                continue
             }
+            guard msg.role == "user" || msg.role == "assistant",
+                  msg.toolCallId == nil, !msg.content.isEmpty else { continue }
+            let role = msg.role == "assistant" ? "model" : "user"
+            contents.append(["role": role, "parts": [["text": msg.content]]])
         }
 
         var body: [String: Any] = [
@@ -68,8 +72,14 @@ public final class GoogleGeminiAdapter: NSObject, ProviderAdapter {
         do {
             let (bytes, response) = try await session.bytes(for: request)
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                print("[Anvil] Gemini HTTP \(http.statusCode)")
-                return StreamResult(text: text, toolCalls: toolCalls)
+                var detail = ""
+                for try await line in bytes.lines {
+                    detail += line
+                    if detail.count > 300 { break }
+                }
+                let message = "HTTP \(http.statusCode)"
+                    + (detail.isEmpty ? "" : ": \(String(detail.prefix(300)))")
+                return StreamResult(text: text, toolCalls: toolCalls, error: message)
             }
             for try await line in bytes.lines {
                 try Task.checkCancellation()
@@ -99,7 +109,8 @@ public final class GoogleGeminiAdapter: NSObject, ProviderAdapter {
         } catch is CancellationError {
             return StreamResult(text: text, toolCalls: toolCalls)
         } catch {
-            print("[Anvil] Gemini stream error: \(error)")
+            return StreamResult(text: text, toolCalls: toolCalls,
+                                error: "Connection failed: \(error.localizedDescription)")
         }
 
         return StreamResult(text: text, toolCalls: toolCalls)

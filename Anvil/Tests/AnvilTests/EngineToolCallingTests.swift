@@ -9,12 +9,14 @@ final class MockURLProtocol: URLProtocol {
     nonisolated(unsafe) static var responseBody = Data()
     nonisolated(unsafe) static var statusCode = 200
     nonisolated(unsafe) static var capturedBody: Data?
+    nonisolated(unsafe) static var capturedRequest: URLRequest?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
         MockURLProtocol.capturedBody = Self.readBody(request)
+        MockURLProtocol.capturedRequest = request
         let response = HTTPURLResponse(url: request.url!, statusCode: MockURLProtocol.statusCode,
                                        httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
@@ -78,8 +80,73 @@ final class EngineToolCallingTests: XCTestCase {
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]
         OpenAICompatibleAdapter.shared.session = URLSession(configuration: config)
+        AnthropicAdapter.shared.session = URLSession(configuration: config)
+        GoogleGeminiAdapter.shared.session = URLSession(configuration: config)
         MockURLProtocol.capturedBody = nil
+        MockURLProtocol.capturedRequest = nil
         MockURLProtocol.statusCode = 200
+    }
+
+    func testAnthropicPostsToMessagesWithAPIKeyHeaderAndSystemField() async {
+        MockURLProtocol.responseBody = Data("""
+        data: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Hi"}}
+
+        data: {"type":"message_stop"}
+
+        """.utf8)
+
+        let result = await AnthropicAdapter.shared.stream(
+            to: "https://mock.test/v1", model: "claude-test", apiKey: "sk-test",
+            messages: [ProviderMessage(role: "system", content: "be brief"),
+                       ProviderMessage(role: "user", content: "hi")],
+            onTextDelta: { _ in }, onToolCalls: { _ in })
+
+        XCTAssertEqual(result.text, "Hi")
+        XCTAssertEqual(MockURLProtocol.capturedRequest?.url?.path, "/v1/messages")
+        XCTAssertEqual(MockURLProtocol.capturedRequest?.value(forHTTPHeaderField: "x-api-key"), "sk-test")
+        XCTAssertNil(MockURLProtocol.capturedRequest?.value(forHTTPHeaderField: "Authorization"))
+        let body = MockURLProtocol.capturedBody.flatMap {
+            try? JSONSerialization.jsonObject(with: $0) as? [String: Any]
+        }
+        XCTAssertEqual(body?["system"] as? String, "be brief")
+        XCTAssertEqual((body?["messages"] as? [[String: Any]])?.count, 1)
+    }
+
+    func testAnthropicHTTPErrorIsReported() async {
+        MockURLProtocol.statusCode = 401
+        MockURLProtocol.responseBody = Data("{\"error\":\"invalid x-api-key\"}".utf8)
+
+        let result = await AnthropicAdapter.shared.stream(
+            to: "https://mock.test/v1", model: "claude-test", apiKey: "bad",
+            messages: [ProviderMessage(role: "user", content: "hi")],
+            onTextDelta: { _ in }, onToolCalls: { _ in })
+
+        XCTAssertTrue(result.error?.contains("401") ?? false)
+        XCTAssertTrue(result.error?.contains("invalid x-api-key") ?? false)
+    }
+
+    func testGeminiUsesModelPathHeaderKeyAndModelRole() async {
+        MockURLProtocol.responseBody = Data("""
+        data: {"candidates":[{"content":{"parts":[{"text":"Yo"}]}}]}
+
+        """.utf8)
+
+        let result = await GoogleGeminiAdapter.shared.stream(
+            to: "https://mock.test/v1beta", model: "gemini-test", apiKey: "g-key",
+            messages: [ProviderMessage(role: "user", content: "hi"),
+                       ProviderMessage(role: "assistant", content: "hello")],
+            onTextDelta: { _ in }, onToolCalls: { _ in })
+
+        XCTAssertEqual(result.text, "Yo")
+        let url = MockURLProtocol.capturedRequest?.url?.absoluteString ?? ""
+        XCTAssertTrue(url.hasSuffix("/v1beta/models/gemini-test:streamGenerateContent?alt=sse"), url)
+        XCTAssertFalse(url.contains("key="), "the API key must not travel in the URL")
+        XCTAssertEqual(MockURLProtocol.capturedRequest?.value(forHTTPHeaderField: "x-goog-api-key"), "g-key")
+        let body = MockURLProtocol.capturedBody.flatMap {
+            try? JSONSerialization.jsonObject(with: $0) as? [String: Any]
+        }
+        let roles = (body?["contents"] as? [[String: Any]])?.compactMap { $0["role"] as? String }
+        XCTAssertEqual(roles, ["user", "model"])
     }
 
     func testListModelsParsesOpenAIStyleCatalogSorted() async {

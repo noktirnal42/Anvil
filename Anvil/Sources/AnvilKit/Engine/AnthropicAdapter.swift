@@ -18,40 +18,50 @@ public final class AnthropicAdapter: NSObject, ProviderAdapter {
                                                    supportsSystemPrompt: true)
 
     private let baseURL = "https://api.anthropic.com/v1/messages"
-    private let session = URLSession(configuration: .default)
+    /// Internal so tests can route requests through a mock URLProtocol.
+    var session = URLSession(configuration: .default)
     private let anthropicVersion = "2023-06-01"
 
     public func stream(messages: [ProviderMessage],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
-        fatalError("Use stream(to:model:apiKey:) with explicit credentials.")
+        // The endpoint depends on the provider, so a bare call has nowhere to go.
+        return StreamResult(error: "Anthropic needs an explicit endpoint; use stream(to:).")
     }
 
     public func stream(to baseURL: String, model: String, apiKey: String?,
                        messages: [ProviderMessage],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
-        guard let url = URL(string: baseURL) else { return StreamResult() }
+        // Accept either the API root (…/v1) or the full messages endpoint.
+        let root = baseURL.hasSuffix("/") ? String(baseURL.dropLast()) : baseURL
+        let endpoint = root.hasSuffix("/messages") ? root : root + "/messages"
+        guard let url = URL(string: endpoint) else {
+            return StreamResult(error: "Invalid endpoint URL: \(baseURL)")
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         request.setValue(anthropicVersion, forHTTPHeaderField: "anthropic-version")
+        // Anthropic authenticates with x-api-key, not a Bearer token.
         if let apiKey, !apiKey.isEmpty {
-            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+            request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         }
 
-        // Separate system messages from conversation messages
+        // System text goes in its own field. Only plain user/assistant text is
+        // sent: tool turns are not offered on this path yet, so they are skipped.
         var system: String? = nil
         var conversation: [[String: Any]] = []
         for msg in messages {
             if msg.role == "system" {
                 system = msg.content
-            } else {
-                var entry: [String: Any] = ["role": msg.role, "content": msg.content]
-                conversation.append(entry)
+                continue
             }
+            guard msg.role == "user" || msg.role == "assistant",
+                  msg.toolCallId == nil, !msg.content.isEmpty else { continue }
+            conversation.append(["role": msg.role, "content": msg.content])
         }
 
         var body: [String: Any] = [
@@ -81,8 +91,14 @@ public final class AnthropicAdapter: NSObject, ProviderAdapter {
         do {
             let (bytes, response) = try await session.bytes(for: request)
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                print("[Anvil] Anthropic HTTP \(http.statusCode)")
-                return StreamResult(text: text, toolCalls: toolCalls)
+                var detail = ""
+                for try await line in bytes.lines {
+                    detail += line
+                    if detail.count > 300 { break }
+                }
+                let message = "HTTP \(http.statusCode)"
+                    + (detail.isEmpty ? "" : ": \(String(detail.prefix(300)))")
+                return StreamResult(text: text, toolCalls: toolCalls, error: message)
             }
             for try await line in bytes.lines {
                 try Task.checkCancellation()
@@ -133,7 +149,8 @@ public final class AnthropicAdapter: NSObject, ProviderAdapter {
         } catch is CancellationError {
             return StreamResult(text: text, toolCalls: toolCalls)
         } catch {
-            print("[Anvil] Anthropic stream error: \(error)")
+            return StreamResult(text: text, toolCalls: toolCalls,
+                                error: "Connection failed: \(error.localizedDescription)")
         }
 
         return StreamResult(text: text, toolCalls: toolCalls)
