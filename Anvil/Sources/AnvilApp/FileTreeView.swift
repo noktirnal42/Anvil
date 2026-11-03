@@ -34,7 +34,7 @@ struct FileTreeView: View {
                     Text("No indexed folders")
                         .font(.headline)
                         .foregroundStyle(themeManager.theme.textPrimary)
-                    Text("Add a folder to index its files with Spotlight.")
+                    Text("Add a folder to index its files for quick open.")
                         .foregroundStyle(themeManager.theme.textSecondary)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -146,7 +146,7 @@ struct AddFolderView: View {
         VStack(spacing: 16) {
             Text("Index a folder")
                 .font(.headline)
-            Text("Choose a folder to index its files with Spotlight search.")
+            Text("Choose a folder to index its files for quick open (⌘P).")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Button("Choose folder…") {

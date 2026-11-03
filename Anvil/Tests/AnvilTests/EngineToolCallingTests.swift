@@ -160,6 +160,18 @@ final class EngineToolCallingTests: XCTestCase {
         XCTAssertTrue(models.allSatisfy { $0.providerId == "test-openai" })
     }
 
+    func testProviderWithoutEndpointReportsClearError() async {
+        let descriptor = ProviderDescriptor(id: "no-endpoint", name: "Local Thing", baseURL: nil)
+
+        let result = await OpenAICompatibleAdapter.shared.stream(
+            descriptor: descriptor, model: "m",
+            messages: [ProviderMessage(role: "user", content: "hi")],
+            onTextDelta: { _ in }, onToolCalls: { _ in })
+
+        XCTAssertTrue(result.error?.contains("Local Thing") ?? false)
+        XCTAssertNil(MockURLProtocol.capturedRequest, "no request should be attempted")
+    }
+
     func testListModelsReturnsEmptyOnHTTPFailure() async {
         MockURLProtocol.statusCode = 500
         MockURLProtocol.responseBody = Data("oops".utf8)

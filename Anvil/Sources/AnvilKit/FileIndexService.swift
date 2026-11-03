@@ -1,7 +1,27 @@
-// MARK: - File index service (Spotlight NSMetadataQuery)
+// MARK: - File index service (direct filesystem walk)
+
+// Indexes the folders the user adds by walking them on a background thread.
+// This does not depend on Spotlight, which is often partly or wholly disabled
+// on a Mac and never covers some volumes.
 
 import Foundation
 import SwiftData
+import UniformTypeIdentifiers
+
+/// A file found by the scan. Plain values, so they can cross threads safely.
+struct ScannedFile: Sendable, Equatable {
+    let path: String
+    let name: String
+    let uti: String?
+}
+
+/// Folders that hold dependencies or build output. They are never indexed.
+private let skippedFolderNames: Set<String> = [
+    "node_modules", ".build", ".git", "DerivedData", "Pods"
+]
+
+/// Upper bound so one huge folder cannot stall the app or fill the store.
+let fileIndexLimit = 20_000
 
 @MainActor
 public final class FileIndexService: ObservableObject {
@@ -18,10 +38,6 @@ public final class FileIndexService: ObservableObject {
     @Published public var indexedFolders: [IndexedFolder] = []
     @Published public var files: [FileRecord] = []
     @Published public var isIndexing = false
-
-    private var query: NSMetadataQuery?
-    private var queryTimer: Timer?
-    private var queryObservers: [NSObjectProtocol] = []
 
     // MARK: - Folders
 
@@ -53,79 +69,58 @@ public final class FileIndexService: ObservableObject {
         loadFiles()
     }
 
-    // MARK: - Indexing (Spotlight)
+    // MARK: - Indexing
 
+    /// Re-scans every indexed folder in the background and replaces the file list.
     public func startIndexing() {
-        guard !isIndexing else { return }
+        guard !isIndexing, !indexedFolders.isEmpty else { return }
         isIndexing = true
+        let roots = indexedFolders.map { URL(fileURLWithPath: $0.path) }
 
-        // Run a spotlight query over indexed folders' items
-        let query = NSMetadataQuery()
-        self.query = query
-
-        var scopes: [String] = []
-        for folder in indexedFolders {
-            scopes.append(folder.path)
-        }
-        guard !scopes.isEmpty else {
+        Task {
+            let found = await Task.detached(priority: .utility) {
+                Self.scan(roots: roots, limit: fileIndexLimit)
+            }.value
+            replaceIndex(with: found)
             isIndexing = false
-            return
-        }
-        query.searchScopes = scopes
-        query.predicate = NSPredicate(format: "kMDItemKind != 'Folder'")
-
-        var obs1: NSObjectProtocol?
-        var obs2: NSObjectProtocol?
-        obs1 = NotificationCenter.default.addObserver(
-            forName: .NSMetadataQueryDidUpdate,
-            object: query,
-            queue: .main
-        ) { [weak self] _ in
-            self?.processResults(self?.query?.results ?? [])
-        }
-        obs2 = NotificationCenter.default.addObserver(
-            forName: .NSMetadataQueryDidFinishGathering,
-            object: query,
-            queue: .main
-        ) { [weak self] _ in
-            self?.processResults(self?.query?.results ?? [])
-            self?.stopQuery()
-        }
-        // keep observers alive for the query's lifetime
-        queryObservers = [obs1, obs2].compactMap { $0 }
-
-        query.start()
-        queryObservers = []
-        // Spotlight queries run continuously; stop gathering after a few seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { [weak self] in
-            self?.stopQuery()
         }
     }
 
-    private func stopQuery() {
-        query?.stop()
-        query = nil
-        queryObservers.removeAll()
-        isIndexing = false
+    /// Walks each root and returns its regular files. Hidden files, package
+    /// contents and the folders in `skippedFolderNames` are left out.
+    nonisolated static func scan(roots: [URL], limit: Int) -> [ScannedFile] {
+        let keys: [URLResourceKey] = [.isRegularFileKey, .contentTypeKey]
+        var found: [ScannedFile] = []
+        for root in roots {
+            guard let walker = FileManager.default.enumerator(
+                at: root,
+                includingPropertiesForKeys: keys,
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            ) else { continue }
+
+            for case let url as URL in walker {
+                if skippedFolderNames.contains(url.lastPathComponent) {
+                    walker.skipDescendants()
+                    continue
+                }
+                guard let values = try? url.resourceValues(forKeys: Set(keys)),
+                      values.isRegularFile == true else { continue }
+                found.append(ScannedFile(path: url.path,
+                                         name: url.lastPathComponent,
+                                         uti: values.contentType?.identifier))
+                if found.count >= limit { return found }
+            }
+        }
+        return found
     }
 
-    private func processResults(_ results: [Any]) {
-        var records: [FileRecord] = []
-        for item in results {
-            guard let mdItem = item as? NSMetadataItem,
-                  let path = mdItem.value(forAttribute: kMDItemPath as String) as? String,
-                  let name = mdItem.value(forAttribute: kMDItemDisplayName as String) as? String
-            else { continue }
-            let uti = mdItem.value(forAttribute: kMDItemContentType as String) as? String
-            records.append(FileRecord(path: path, name: name, uti: uti))
-        }
-        // Persist
-        files.removeAll()
-        for rec in records {
-            context.insert(rec)
+    private func replaceIndex(with found: [ScannedFile]) {
+        try? context.delete(model: FileRecord.self)
+        for file in found {
+            context.insert(FileRecord(path: file.path, name: file.name, uti: file.uti))
         }
         save()
-        self.files = records.sorted { $0.name < $1.name }
+        loadFiles()
     }
 
     // MARK: - Files

@@ -260,7 +260,9 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
                        messages: [ProviderMessage], tools: [MCPTool],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
-        let baseURL = descriptor.baseURL ?? ""
+        guard let baseURL = descriptor.baseURL, !baseURL.isEmpty else {
+            return StreamResult(error: "No endpoint is set up for \(descriptor.name). Choose another provider from the model menu.")
+        }
         let apiKey: String?
         if descriptor.requiresAPIKey {
             apiKey = try? KeychainStore.shared.get(descriptor.id)
