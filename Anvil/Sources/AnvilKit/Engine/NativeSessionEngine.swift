@@ -16,6 +16,8 @@ public final class NativeSessionEngine: ObservableObject {
     @Published public var isRunning = false
     /// The assistant's accumulated text for the current round.
     @Published public var roundText: String = ""
+    /// Most recent provider or engine failure, cleared at the start of each run.
+    @Published public var lastError: String?
 
     private var currentTask: Task<Void, Never>?
     private var decisionContinuation: CheckedContinuation<ToolCallDecision, Never>?
@@ -64,17 +66,25 @@ public final class NativeSessionEngine: ObservableObject {
         isRunning = true
         defer { isRunning = false }
 
+        lastError = nil
+
+        // Persist the user message first so a failure still leaves it visible.
+        _ = store.appendMessage(to: session, role: "user", content: userMessage, isComplete: true)
+
         guard let adapter = adapterRegistry.adapter(for: descriptor.id) else {
+            reportError("No native adapter is registered for \(descriptor.name).",
+                        session: session, store: store)
             onComplete()
             return
         }
 
-        // Persist the user message
-        _ = store.appendMessage(to: session, role: "user", content: userMessage, isComplete: true)
-
-        // Build conversation history fed to the model
+        // Build conversation history fed to the model.
         // SwiftData relationships are unordered, so sort before replaying history.
-        var history: [ProviderMessage] = session.messages.sorted { $0.createdAt < $1.createdAt }.map { msg in
+        // "error" rows are for display only and must never reach the provider.
+        var history: [ProviderMessage] = session.messages
+            .filter { $0.role != "error" }
+            .sorted { $0.createdAt < $1.createdAt }
+            .map { msg in
             ProviderMessage(role: msg.role, content: msg.content,
                             toolCallId: msg.toolCallId, toolName: msg.toolName,
                             toolArguments: msg.toolArguments.flatMap { try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] })
@@ -92,6 +102,13 @@ public final class NativeSessionEngine: ObservableObject {
                 history.append(ProviderMessage(role: "assistant", content: result.text))
                 _ = store.appendMessage(to: session, role: "assistant",
                                         content: result.text, isComplete: true)
+            }
+
+            // Provider failed: show the reason and stop instead of looping silently.
+            if let error = result.error {
+                reportError(error, session: session, store: store)
+                onComplete()
+                return
             }
 
             // No tool calls → generation complete
@@ -147,7 +164,17 @@ public final class NativeSessionEngine: ObservableObject {
             _ = store.appendMessage(to: session, role: "assistant",
                                     content: synthesis.text, isComplete: true)
         }
+        if let error = synthesis.error {
+            reportError(error, session: session, store: store)
+        }
         onComplete()
+    }
+
+    /// Shows a failure in the transcript (role "error") and in `lastError`.
+    /// Error rows are excluded from the history sent to the provider.
+    private func reportError(_ message: String, session: Session, store: SessionStore) {
+        lastError = message
+        _ = store.appendMessage(to: session, role: "error", content: message, isComplete: true)
     }
 
     // MARK: - Single streaming round

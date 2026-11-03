@@ -7,6 +7,7 @@ import XCTest
 // and script the SSE response without touching the network.
 final class MockURLProtocol: URLProtocol {
     nonisolated(unsafe) static var responseBody = Data()
+    nonisolated(unsafe) static var statusCode = 200
     nonisolated(unsafe) static var capturedBody: Data?
 
     override class func canInit(with request: URLRequest) -> Bool { true }
@@ -14,7 +15,7 @@ final class MockURLProtocol: URLProtocol {
 
     override func startLoading() {
         MockURLProtocol.capturedBody = Self.readBody(request)
-        let response = HTTPURLResponse(url: request.url!, statusCode: 200,
+        let response = HTTPURLResponse(url: request.url!, statusCode: MockURLProtocol.statusCode,
                                        httpVersion: nil, headerFields: nil)!
         client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
         client?.urlProtocol(self, didLoad: MockURLProtocol.responseBody)
@@ -78,6 +79,22 @@ final class EngineToolCallingTests: XCTestCase {
         config.protocolClasses = [MockURLProtocol.self]
         OpenAICompatibleAdapter.shared.session = URLSession(configuration: config)
         MockURLProtocol.capturedBody = nil
+        MockURLProtocol.statusCode = 200
+    }
+
+    func testHTTPErrorIsReportedWithProviderDetail() async {
+        MockURLProtocol.statusCode = 401
+        MockURLProtocol.responseBody = Data("{\"error\":\"bad key\"}".utf8)
+
+        let result = await OpenAICompatibleAdapter.shared.stream(
+            to: "https://mock.test/v1", model: "m", apiKey: "wrong",
+            messages: [ProviderMessage(role: "user", content: "hi")],
+            onTextDelta: { _ in }, onToolCalls: { _ in })
+
+        XCTAssertTrue(result.text.isEmpty)
+        XCTAssertNotNil(result.error)
+        XCTAssertTrue(result.error?.contains("401") ?? false)
+        XCTAssertTrue(result.error?.contains("bad key") ?? false)
     }
 
     // MARK: - Request encoding
@@ -177,6 +194,28 @@ final class EngineToolCallingTests: XCTestCase {
     }
 
     // MARK: - Engine loop
+
+    func testEngineShowsProviderErrorInTranscriptAndStops() async {
+        let adapter = ScriptedAdapter()
+        adapter.script = [StreamResult(error: "HTTP 401: bad key")]
+        ProviderAdapterRegistry.shared.register(adapter, for: adapter.id)
+        let descriptor = ProviderDescriptor(id: adapter.id, name: adapter.name)
+        let session = SessionStore.shared.createSession(title: "Error surfacing",
+                                                        provider: adapter.id, model: "m")
+        let engine = NativeSessionEngine.shared
+
+        var completed = false
+        await engine.run(session: session, descriptor: descriptor, model: "m",
+                         userMessage: "hello", store: SessionStore.shared,
+                         onComplete: { completed = true })
+
+        XCTAssertTrue(completed)
+        XCTAssertEqual(adapter.recordedMessages.count, 1, "engine must stop after a provider error")
+        XCTAssertEqual(engine.lastError, "HTTP 401: bad key")
+        let transcript = session.messages.sorted { $0.createdAt < $1.createdAt }
+        XCTAssertEqual(transcript.map(\.role), ["user", "error"])
+        XCTAssertEqual(transcript.last?.content, "HTTP 401: bad key")
+    }
 
     func testEngineRecordsToolCallBeforeItsResult() async throws {
         let adapter = ScriptedAdapter()

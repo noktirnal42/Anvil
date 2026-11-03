@@ -18,7 +18,7 @@ struct ChatView: View {
         VStack(spacing: 0) {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 12) {
-                    ForEach(session.messages) { message in
+                    ForEach(session.messages.sorted { $0.createdAt < $1.createdAt }) { message in
                         MessageBubble(message: message)
                     }
                     // Round in-progress indicator
@@ -150,8 +150,16 @@ private struct MessageBubble: View {
                 Spacer(minLength: 60)
             }
             VStack(alignment: message.role == "user" ? .trailing : .leading, spacing: 4) {
+                // Provider failures stand out so a silent stall is never mistaken for a reply
+                if message.role == "error" {
+                    Label(message.content, systemImage: "exclamationmark.triangle.fill")
+                        .font(.callout)
+                        .foregroundStyle(themeManager.theme.error)
+                        .padding(12)
+                        .background(themeManager.theme.error.opacity(0.12))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 // Tool results render distinctly
-                if message.role == "tool" {
+                } else if message.role == "tool" {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack {
                             Image(systemName: "wrench.and.screwdriver")

@@ -46,13 +46,17 @@ public struct ProviderCapabilities: Sendable, Equatable {
 }
 
 /// Result of a streaming turn: accumulated text + any tool calls requested.
+/// `error` is set when the provider could not complete the turn; adapters must
+/// report failures here rather than returning an empty result silently.
 public struct StreamResult: Sendable, Equatable {
     public let text: String
     public let toolCalls: [ToolCall]
+    public let error: String?
 
-    public init(text: String = "", toolCalls: [ToolCall] = []) {
+    public init(text: String = "", toolCalls: [ToolCall] = [], error: String? = nil) {
         self.text = text
         self.toolCalls = toolCalls
+        self.error = error
     }
 }
 

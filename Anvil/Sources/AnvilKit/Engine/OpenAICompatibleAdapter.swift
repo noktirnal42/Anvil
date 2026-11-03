@@ -37,7 +37,7 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
         guard let url = URL(string: baseURL.hasSuffix("/") ? baseURL + "chat/completions"
                                                         : baseURL + "/chat/completions") else {
-            return StreamResult()
+            return StreamResult(error: "Invalid endpoint URL: \(baseURL)")
         }
 
         var request = URLRequest(url: url)
@@ -77,8 +77,15 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
         do {
             let (bytes, response) = try await session.bytes(for: request)
             if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                print("[Anvil] OpenAI-compatible HTTP \(http.statusCode)")
-                return StreamResult(text: text, toolCalls: toolCalls)
+                // Providers usually explain the failure in the body (bad key, unknown model).
+                var detail = ""
+                for try await line in bytes.lines {
+                    detail += line
+                    if detail.count > 300 { break }
+                }
+                let message = "HTTP \(http.statusCode)"
+                    + (detail.isEmpty ? "" : ": \(String(detail.prefix(300)))")
+                return StreamResult(text: text, toolCalls: toolCalls, error: message)
             }
             for try await line in bytes.lines {
                 try Task.checkCancellation()
@@ -119,7 +126,8 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
         } catch is CancellationError {
             return StreamResult(text: text, toolCalls: toolCalls)
         } catch {
-            print("[Anvil] OpenAI-compatible stream error: \(error)")
+            return StreamResult(text: text, toolCalls: toolCalls,
+                                error: "Connection failed: \(error.localizedDescription)")
         }
 
         // Finalize buffered tool calls
