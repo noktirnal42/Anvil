@@ -8,7 +8,8 @@ struct ChatView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var providerRegistry: ProviderRegistry
-    @EnvironmentObject private var agentRunner: AgentRunner
+    @EnvironmentObject private var adapterRegistry: ProviderAdapterRegistry
+    @EnvironmentObject private var nativeEngine: NativeSessionEngine
     @EnvironmentObject private var mcpClient: MCPClient
     @State private var inputText = ""
     @State private var isStreaming = false
@@ -21,11 +22,11 @@ struct ChatView: View {
                         MessageBubble(message: message)
                     }
                     // Round in-progress indicator
-                    if isStreaming && !agentRunner.roundText.isEmpty {
+                    if isStreaming && !nativeEngine.roundText.isEmpty {
                         HStack(alignment: .top, spacing: 10) {
                             Spacer(minLength: 60)
                             VStack(alignment: .leading, spacing: 4) {
-                                Text(agentRunner.roundText.isEmpty ? "…" : agentRunner.roundText)
+                                Text(nativeEngine.roundText.isEmpty ? "…" : nativeEngine.roundText)
                                     .foregroundStyle(themeManager.theme.textPrimary)
                                     .padding(12)
                                     .background(themeManager.theme.chatBubbleAssistant)
@@ -95,21 +96,21 @@ struct ChatView: View {
         // Tool approval modal overlay
         .overlay(
             Group {
-                if let call = agentRunner.pendingToolCall {
+                if let call = nativeEngine.pendingToolCall {
                     ZStack {
                         Color.black.opacity(0.35)
                             .ignoresSafeArea()
                             .onTapGesture { /* dismiss on backdrop tap is disabled; must choose */ }
                         ToolApprovalView(call: call,
-                                         onApprove: agentRunner.approveCurrentToolCall,
-                                         onDeny: agentRunner.denyCurrentToolCall(reason:))
+                                         onApprove: nativeEngine.approveCurrentToolCall,
+                                         onDeny: nativeEngine.denyCurrentToolCall(reason:))
                     }
                     .transition(.scale.combined(with: .opacity))
                 }
             },
             alignment: .center
         )
-        .animation(.spring(), value: agentRunner.pendingToolCall != nil)
+        .animation(.spring(), value: nativeEngine.pendingToolCall != nil)
         .onAppear {
             sessionStore.selectedSession = session
         }
@@ -120,20 +121,24 @@ struct ChatView: View {
         guard !text.isEmpty else { return }
         inputText = ""
 
-        let provider = providerRegistry.provider(id: session.provider) ?? providerRegistry.default
+        let descriptor = providerRegistry.provider(id: session.provider) ?? providerRegistry.default
         isStreaming = true
 
+        // Resolve the native provider adapter for this session's provider
+        let adapter = adapterRegistry.adapter(for: session.provider)
+        nativeEngine.adapter = adapter
+
         Task { @MainActor in
-            await agentRunner.run(session: session, provider: provider,
-                                  userMessage: text, store: sessionStore,
-                                  onComplete: {
-                                      isStreaming = false
-                                  })
+            await nativeEngine.run(session: session, userMessage: text,
+                                   store: sessionStore,
+                                   onComplete: {
+                                       isStreaming = false
+                                   })
         }
     }
 
     private func stop() {
-        agentRunner.stop()
+        nativeEngine.stop()
         isStreaming = false
     }
 }

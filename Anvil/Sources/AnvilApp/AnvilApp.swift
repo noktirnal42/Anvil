@@ -9,6 +9,8 @@ struct AnvilApp: App {
     @StateObject private var providerRegistry = ProviderRegistry.shared
     @StateObject private var sessionStore = SessionStore.shared
     @StateObject private var agentRunner = AgentRunner.shared
+    @StateObject private var nativeEngine = NativeSessionEngine.shared
+    @StateObject private var adapterRegistry = ProviderAdapterRegistry.shared
     @StateObject private var mcpClient = MCPClient.shared
     @StateObject private var gitClient = GitClient.shared
     @StateObject private var artifactStore = ArtifactStore.shared
@@ -17,12 +19,18 @@ struct AnvilApp: App {
     @StateObject private var updateManager = UpdateManager.shared
     @State private var showQuickOpen = false
 
+    init() {
+        ProviderAdapterRegistry.shared.registerDefaults()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(providerRegistry)
                 .environmentObject(sessionStore)
                 .environmentObject(agentRunner)
+                .environmentObject(nativeEngine)
+                .environmentObject(adapterRegistry)
                 .environmentObject(mcpClient)
                 .environmentObject(gitClient)
                 .environmentObject(artifactStore)
