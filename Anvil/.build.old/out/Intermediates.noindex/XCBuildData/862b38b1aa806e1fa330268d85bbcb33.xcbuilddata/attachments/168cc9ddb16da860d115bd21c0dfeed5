@@ -1,4 +1,0 @@
-module AnvilKit {
-header "AnvilKit-Swift.h"
-export *
-}

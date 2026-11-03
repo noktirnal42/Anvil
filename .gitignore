@@ -7,3 +7,6 @@
 DerivedData/
 *.xcodeproj/
 .xcworkspace/
+
+# Local SwiftPM/Xcode build caches (never publish)
+Anvil/.build.old/
