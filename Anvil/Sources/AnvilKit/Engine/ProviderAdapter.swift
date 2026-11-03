@@ -83,6 +83,13 @@ public protocol ProviderAdapter: AnyObject {
                 onTextDelta: @escaping (String) -> Void,
                 onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult
 
+    /// Stream with tool definitions the model may call. An empty `tools` list
+    /// means the model must answer without calling tools (synthesis turn).
+    func stream(descriptor: ProviderDescriptor, model: String,
+                messages: [ProviderMessage], tools: [MCPTool],
+                onTextDelta: @escaping (String) -> Void,
+                onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult
+
     /// Optional: fetch the model catalog for this provider.
     func listModels() async -> [ModelDescriptor]
 }
@@ -97,5 +104,15 @@ extension ProviderAdapter {
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
         // Base default: no endpoint knowledge; subclasses override.
         return StreamResult()
+    }
+
+    /// Default for adapters without native tool support: ignore `tools` and
+    /// stream as plain text.
+    public func stream(descriptor: ProviderDescriptor, model: String,
+                       messages: [ProviderMessage], tools: [MCPTool],
+                       onTextDelta: @escaping (String) -> Void,
+                       onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
+        await stream(descriptor: descriptor, model: model, messages: messages,
+                     onTextDelta: onTextDelta, onToolCalls: onToolCalls)
     }
 }

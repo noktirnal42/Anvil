@@ -18,21 +18,21 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
                                                    supportsStreaming: true,
                                                    supportsSystemPrompt: true)
 
-    private let session = URLSession(configuration: .default)
+    /// Internal so tests can route requests through a mock URLProtocol.
+    var session = URLSession(configuration: .default)
 
+    /// The endpoint is chosen per call, so a bare `stream(messages:)` has no
+    /// destination. Return an empty result rather than crashing the app.
     public func stream(messages: [ProviderMessage],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
-        // The adapter is stateless regarding the endpoint — the caller
-        // (NativeSessionEngine) must have set the baseURL via configure.
-        // For now we read from the first tool-calling-capable provider's
-        // baseURL; in v2.0 phase 2 the engine passes the endpoint per call.
-        fatalError("Use stream(to:messages:) with an explicit endpoint.")
+        print("[Anvil] OpenAI-compatible stream needs an explicit endpoint; use stream(to:)")
+        return StreamResult()
     }
 
     /// Stream against an explicit endpoint (baseURL + model + API key).
     public func stream(to baseURL: String, model: String, apiKey: String?,
-                       messages: [ProviderMessage],
+                       messages: [ProviderMessage], tools: [MCPTool] = [],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
         guard let url = URL(string: baseURL.hasSuffix("/") ? baseURL + "chat/completions"
@@ -50,17 +50,14 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
             request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
         }
 
-        let body: [String: Any] = [
+        var body: [String: Any] = [
             "model": model,
             "stream": true,
-            "messages": messages.map { msg in
-                var entry: [String: Any] = ["role": msg.role, "content": msg.content]
-                if let toolCallId = msg.toolCallId {
-                    entry["tool_call_id"] = toolCallId
-                }
-                return entry
-            }
+            "messages": Self.encodeMessages(messages)
         ]
+        if !tools.isEmpty {
+            body["tools"] = Self.encodeTools(tools)
+        }
         request.httpBody = try? JSONSerialization.data(withJSONObject: body)
 
         var text = ""
@@ -134,6 +131,9 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
             return ToolCall(id: id, name: name, arguments: args)
         }
         toolCalls = calls
+        if !toolCalls.isEmpty {
+            onToolCalls(toolCalls)
+        }
         return StreamResult(text: text, toolCalls: toolCalls)
     }
 
@@ -142,12 +142,78 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
         []
     }
 
+    // MARK: - Request encoding (internal, covered by tests)
+
+    /// Encodes engine history into OpenAI chat messages. Consecutive assistant
+    /// messages that carry a toolCallId form one assistant turn with a
+    /// `tool_calls` array, which the API requires before any tool result.
+    static func encodeMessages(_ messages: [ProviderMessage]) -> [[String: Any]] {
+        var out: [[String: Any]] = []
+        var index = 0
+        while index < messages.count {
+            let msg = messages[index]
+            if msg.role == "assistant", msg.toolCallId != nil {
+                var calls: [[String: Any]] = []
+                while index < messages.count,
+                      messages[index].role == "assistant",
+                      messages[index].toolCallId != nil {
+                    let call = messages[index]
+                    let function: [String: Any] = [
+                        "name": call.toolName ?? "",
+                        "arguments": jsonString(call.toolArguments ?? [:])
+                    ]
+                    calls.append(["id": call.toolCallId ?? "", "type": "function", "function": function])
+                    index += 1
+                }
+                out.append(["role": "assistant", "content": "", "tool_calls": calls])
+                continue
+            }
+            if msg.role == "tool" {
+                out.append(["role": "tool", "tool_call_id": msg.toolCallId ?? "", "content": msg.content])
+            } else {
+                out.append(["role": msg.role, "content": msg.content])
+            }
+            index += 1
+        }
+        return out
+    }
+
+    /// Encodes MCP tools as OpenAI function definitions.
+    static func encodeTools(_ tools: [MCPTool]) -> [[String: Any]] {
+        tools.map { tool in
+            let function: [String: Any] = [
+                "name": tool.name,
+                "description": tool.description ?? "",
+                "parameters": tool.inputSchema ?? ["type": "object", "properties": [String: Any]()]
+            ]
+            return ["type": "function", "function": function]
+        }
+    }
+
+    static func jsonString(_ object: [String: Any]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: object),
+              let string = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return string
+    }
+
     // MARK: - Helpers (internal, used by engine wiring)
 
-    /// Convenience: stream against a ProviderDescriptor + session model,
-    /// resolving the API key from Keychain.
+    /// Convenience: stream against a ProviderDescriptor, resolving the API key
+    /// from Keychain. Sends no tool definitions.
     public func stream(descriptor: ProviderDescriptor, model: String,
                        messages: [ProviderMessage],
+                       onTextDelta: @escaping (String) -> Void,
+                       onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
+        await stream(descriptor: descriptor, model: model, messages: messages, tools: [],
+                     onTextDelta: onTextDelta, onToolCalls: onToolCalls)
+    }
+
+    /// Stream against a ProviderDescriptor with tool definitions, resolving the
+    /// API key from Keychain.
+    public func stream(descriptor: ProviderDescriptor, model: String,
+                       messages: [ProviderMessage], tools: [MCPTool],
                        onTextDelta: @escaping (String) -> Void,
                        onToolCalls: @escaping ([ToolCall]) -> Void) async -> StreamResult {
         let baseURL = descriptor.baseURL ?? ""
@@ -158,7 +224,7 @@ public final class OpenAICompatibleAdapter: NSObject, ProviderAdapter {
             apiKey = nil
         }
         return await stream(to: baseURL, model: model, apiKey: apiKey,
-                            messages: messages,
+                            messages: messages, tools: tools,
                             onTextDelta: onTextDelta,
                             onToolCalls: onToolCalls)
     }

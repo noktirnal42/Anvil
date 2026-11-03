@@ -23,6 +23,10 @@ public final class NativeSessionEngine: ObservableObject {
 
     private let adapterRegistry = ProviderAdapterRegistry.shared
 
+    /// Maximum model turns that may request tools before the engine forces a
+    /// tool-free synthesis answer. Overridable for long agentic tasks.
+    public var maxToolRounds = 25
+
     public enum ToolCallDecision: Sendable {
         case approve
         case deny(String)
@@ -69,20 +73,19 @@ public final class NativeSessionEngine: ObservableObject {
         _ = store.appendMessage(to: session, role: "user", content: userMessage, isComplete: true)
 
         // Build conversation history fed to the model
-        var history: [ProviderMessage] = session.messages.map { msg in
+        // SwiftData relationships are unordered, so sort before replaying history.
+        var history: [ProviderMessage] = session.messages.sorted { $0.createdAt < $1.createdAt }.map { msg in
             ProviderMessage(role: msg.role, content: msg.content,
                             toolCallId: msg.toolCallId, toolName: msg.toolName,
                             toolArguments: msg.toolArguments.flatMap { try? JSONSerialization.jsonObject(with: Data($0.utf8)) as? [String: Any] })
         }
 
-        let maxToolRounds = 4
-
         for _ in 0..<maxToolRounds {
             guard !Task.isCancelled else { onComplete(); return }
 
-            roundText = ""
             let result = await streamRound(adapter: adapter, descriptor: descriptor,
-                                           model: model, history: history, store: store)
+                                           model: model, history: history,
+                                           tools: MCPClient.shared.tools)
 
             // Append assistant message if there's text
             if !result.text.isEmpty {
@@ -97,36 +100,48 @@ public final class NativeSessionEngine: ObservableObject {
                 return
             }
 
-            // Execute each approved tool call
+            // Record every requested call as an assistant turn before any result,
+            // so each tool message has a matching tool_call_id in history.
             for call in result.toolCalls {
-                guard !Task.isCancelled else { onComplete(); return }
+                let arguments = call.arguments ?? [:]
+                history.append(ProviderMessage(role: "assistant", content: "",
+                                               toolCallId: call.id, toolName: call.name,
+                                               toolArguments: arguments))
+                _ = store.appendMessage(to: session, role: "assistant", content: "",
+                                        toolCallId: call.id, toolName: call.name,
+                                        toolArguments: Self.argumentsJSON(arguments),
+                                        isComplete: true)
+            }
 
-                let toolResult: ToolCallResult
-                do {
-                    toolResult = try await requestApprovalAndExecute(call: call)
-                } catch {
-                    toolResult = ToolCallResult(callId: call.id, name: call.name,
-                                                output: "\(error)", isError: true)
+            for call in result.toolCalls {
+                let resultText: String
+                if Task.isCancelled {
+                    resultText = "[tool error] cancelled before execution"
+                } else {
+                    let toolResult: ToolCallResult
+                    do {
+                        toolResult = try await requestApprovalAndExecute(call: call)
+                    } catch {
+                        toolResult = ToolCallResult(callId: call.id, name: call.name,
+                                                    output: "\(error)", isError: true)
+                    }
+                    resultText = toolResult.isError
+                        ? "[tool error] \(toolResult.output)"
+                        : toolResult.output
                 }
-
-                let resultText = toolResult.isError
-                    ? "[tool error] \(toolResult.output)"
-                    : toolResult.output
                 history.append(ProviderMessage(role: "tool", content: resultText,
                                                toolCallId: call.id))
                 _ = store.appendMessage(to: session, role: "tool",
                                         content: resultText,
                                         toolCallId: call.id,
-                                        toolName: call.name,
-                                        toolArguments: "")
+                                        toolName: call.name)
             }
         }
 
-        // Exhausted tool rounds → final synthesis turn (no tools)
+        // Exhausted tool rounds → final synthesis turn with no tools offered
         roundText = ""
         let synthesis = await streamRound(adapter: adapter, descriptor: descriptor,
-                                          model: model, history: history, store: store,
-                                          synthesis: true)
+                                          model: model, history: history, tools: [])
         if !synthesis.text.isEmpty {
             history.append(ProviderMessage(role: "assistant", content: synthesis.text))
             _ = store.appendMessage(to: session, role: "assistant",
@@ -137,27 +152,23 @@ public final class NativeSessionEngine: ObservableObject {
 
     // MARK: - Single streaming round
 
+    /// Streams one model turn. Text deltas update `roundText` live; the final
+    /// text and tool calls come from the adapter's returned StreamResult.
     private func streamRound(adapter: ProviderAdapter, descriptor: ProviderDescriptor,
                              model: String, history: [ProviderMessage],
-                             store: SessionStore, synthesis: Bool = false)
-        async -> StreamResult {
-        var text = ""
-        var toolCalls: [ToolCall] = []
-
+                             tools: [MCPTool]) async -> StreamResult {
         roundText = ""
 
-        await adapter.stream(descriptor: descriptor, model: model, messages: history,
-                             onTextDelta: { [weak self] chunk in
-                                 text += chunk
-                                 Task { @MainActor in
-                                     self?.roundText = text
-                                 }
-                             },
-                             onToolCalls: { calls in
-                                 toolCalls = calls
-                             })
-
-        return StreamResult(text: text, toolCalls: toolCalls)
+        let result = await adapter.stream(descriptor: descriptor, model: model,
+                                          messages: history, tools: tools,
+                                          onTextDelta: { [weak self] chunk in
+                                              Task { @MainActor in
+                                                  self?.roundText += chunk
+                                              }
+                                          },
+                                          onToolCalls: { _ in })
+        roundText = result.text
+        return result
     }
 
     // MARK: - Tool approval + execution
@@ -206,6 +217,15 @@ public final class NativeSessionEngine: ObservableObject {
                                   output: "\(output?.description ?? "no output")",
                                   isError: output == nil)
         }
+    }
+
+    /// Serializes tool arguments as the JSON object string stored on messages.
+    static func argumentsJSON(_ arguments: [String: Any]) -> String {
+        guard let data = try? JSONSerialization.data(withJSONObject: arguments),
+              let string = String(data: data, encoding: .utf8) else {
+            return "{}"
+        }
+        return string
     }
 
     public func stop() {
