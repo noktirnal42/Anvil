@@ -2,11 +2,24 @@
 
 import Foundation
 
-public enum GitError: Error, Sendable, Equatable {
+public enum GitError: LocalizedError, Sendable, Equatable {
     case notAGitRepository
     case commandFailed(String)
     case parseFailed(String)
     case noRepository
+
+    public var errorDescription: String? {
+        switch self {
+        case .notAGitRepository:
+            return "This folder is not inside a Git repository."
+        case .commandFailed(let message):
+            return message.isEmpty ? "git failed without a message." : message
+        case .parseFailed(let detail):
+            return "Could not read git output: \(detail)"
+        case .noRepository:
+            return "No repository is selected."
+        }
+    }
 }
 
 /// Thin wrapper around the system `git` binary. All operations run on a

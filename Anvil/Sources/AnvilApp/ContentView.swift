@@ -6,8 +6,9 @@ import AnvilKit
 struct ContentView: View {
     @EnvironmentObject private var sessionStore: SessionStore
     @EnvironmentObject private var gitClient: GitClient
+    @EnvironmentObject private var themeManager: ThemeManager
     @State private var selectedSessionID: UUID?
-    @State private var gitWorkingDirectory: URL?
+    @State private var gitWorkingDirectory = ContentView.savedGitDirectory()
 
     var body: some View {
         NavigationSplitView {
@@ -21,10 +22,8 @@ struct ContentView: View {
                         TerminalView()
                             .tabItem { Label("Terminal", systemImage: "terminal") }
                         Group {
-                            if let gitURL = gitWorkingDirectory {
-                                GitStatusView(workingDirectory: gitURL)
-                                    .tabItem { Label("Git", systemImage: "branch") }
-                            }
+                            GitStatusView(workingDirectory: $gitWorkingDirectory)
+                                .tabItem { Label("Git", systemImage: "branch") }
                             ArtifactsView()
                                 .tabItem { Label("Artifacts", systemImage: "cube.transparent") }
                             FileTreeView()
@@ -41,11 +40,18 @@ struct ContentView: View {
         .onChange(of: selectedSessionID) { _, newID in
             sessionStore.selectedSession = sessionStore.sessions.first { $0.id == newID }
         }
-        .onAppear {
-            if gitWorkingDirectory == nil {
-                gitWorkingDirectory = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
-            }
+        // Keep system controls readable on the theme's background.
+        .preferredColorScheme(themeManager.theme.isDark ? .dark : .light)
+    }
+
+    /// The Git tab's repository: the last folder the user chose, else the home folder.
+    /// An app launched from Finder starts in "/", which is not a repository.
+    static func savedGitDirectory() -> URL {
+        if let path = UserDefaults.standard.string(forKey: GitStatusView.savedFolderKey),
+           FileManager.default.fileExists(atPath: path) {
+            return URL(fileURLWithPath: path)
         }
+        return FileManager.default.homeDirectoryForCurrentUser
     }
 }
 

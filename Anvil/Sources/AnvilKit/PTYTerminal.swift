@@ -14,6 +14,8 @@ public final class PTYTerminal: NSObject, ObservableObject {
 
     /// Emitted output from the pty (raw bytes decoded as UTF-8, lossy).
     @Published public var output: AttributedString = AttributedString("")
+    /// Parses escape sequences out of the raw stream; state carries across reads.
+    private var ansi = ANSIStream()
 
     /// Whether a shell is currently running.
     @Published public var isRunning: Bool = false
@@ -101,7 +103,8 @@ public final class PTYTerminal: NSObject, ObservableObject {
             if !data.isEmpty {
                 let chunk = String(data: data, encoding: .utf8) ?? String(decoding: data, as: Unicode.ASCII.self)
                 Task { @MainActor in
-                    self?.output += AttributedString(chunk)
+                    guard let self else { return }
+                    self.output += self.ansi.append(chunk)
                 }
             } else {
                 Task { @MainActor in
@@ -156,5 +159,6 @@ public final class PTYTerminal: NSObject, ObservableObject {
 
     public func clear() {
         output = AttributedString("")
+        ansi = ANSIStream()
     }
 }

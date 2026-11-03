@@ -4,10 +4,13 @@ import SwiftUI
 import AnvilKit
 
 struct GitStatusView: View {
-    let workingDirectory: URL
+    static let savedFolderKey = "anvil.gitWorkingDirectory"
+
+    @Binding var workingDirectory: URL
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var gitClient: GitClient
     @State private var statusFiles: [GitClient.ChangedFile] = []
+    @State private var statusError: String?
     @State private var isLoading = false
     @State private var selectedFile: String?
     @State private var diffText = ""
@@ -26,7 +29,11 @@ struct GitStatusView: View {
                 Text("Git — \(workingDirectory.lastPathComponent)")
                     .font(.headline)
                     .foregroundStyle(themeManager.theme.textPrimary)
+                    .help(workingDirectory.path)
                 Spacer()
+                Button("Open folder…") { chooseFolder() }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(themeManager.theme.accent)
                 Button("Refresh") { loadStatus() }
                     .buttonStyle(.plain)
                     .disabled(isLoading)
@@ -40,6 +47,23 @@ struct GitStatusView: View {
             if isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let statusError {
+                VStack(spacing: 12) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.system(size: 40))
+                        .foregroundStyle(themeManager.theme.error)
+                    Text("Not a Git repository")
+                        .font(.headline)
+                        .foregroundStyle(themeManager.theme.textPrimary)
+                    Text(statusError)
+                        .font(.callout)
+                        .foregroundStyle(themeManager.theme.textSecondary)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: 420)
+                    Text("Choose a folder that contains a repository.")
+                        .foregroundStyle(themeManager.theme.textSecondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if statusFiles.isEmpty {
                 VStack(spacing: 12) {
                     Image(systemName: "branch.badge.checkmark")
@@ -151,8 +175,11 @@ struct GitStatusView: View {
         Task {
             do {
                 self.statusFiles = try await gitClient.status(workingDirectory)
+                self.statusError = nil
             } catch {
-                print("[Git] status failed: \(error)")
+                // Show the failure instead of an empty list that reads as "clean".
+                self.statusFiles = []
+                self.statusError = error.localizedDescription
             }
             isLoading = false
         }
@@ -166,6 +193,20 @@ struct GitStatusView: View {
                 self.diffText = "\(error)"
             }
         }
+    }
+
+    /// Lets the user pick the repository. The choice is remembered for next launch.
+    private func chooseFolder() {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = false
+        panel.canChooseDirectories = true
+        panel.allowsMultipleSelection = false
+        panel.prompt = "Choose"
+        panel.directoryURL = workingDirectory
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        workingDirectory = url
+        UserDefaults.standard.set(url.path, forKey: Self.savedFolderKey)
+        loadStatus()
     }
 
     private func stageFile(_ path: String) async {
