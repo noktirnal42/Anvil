@@ -12,10 +12,14 @@ public final class SwiftDataStack {
     public var mainContext: ModelContext { container.mainContext }
 
     private init() {
+        // Tests share SessionStore.shared; keep their data out of the user's real store.
+        let inMemory = NSClassFromString("XCTestCase") != nil
         do {
+            let configuration = ModelConfiguration(isStoredInMemoryOnly: inMemory)
             container = try ModelContainer(for: Session.self, Message.self,
-                                       Artifact.self, ArtifactVersion.self,
-                                       FileRecord.self, IndexedFolder.self)
+                                           Artifact.self, ArtifactVersion.self,
+                                           FileRecord.self, IndexedFolder.self,
+                                           configurations: configuration)
         } catch {
             fatalError("Failed to create SwiftData ModelContainer: \(error)")
         }

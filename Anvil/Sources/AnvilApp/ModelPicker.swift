@@ -34,9 +34,11 @@ struct ModelPicker: View {
         } label: {
             Label(currentLabel, systemImage: "cpu")
                 .font(.callout)
-                .foregroundStyle(themeManager.theme.textSecondary)
+                .foregroundStyle(themeManager.theme.textPrimary)
         }
         .menuStyle(.borderlessButton)
+        // Borderless menus draw their label with the control tint, not the foreground style.
+        .tint(themeManager.theme.textPrimary)
         .fixedSize()
         .task { await loadCatalogs() }
         .sheet(item: $customProvider) { provider in

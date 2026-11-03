@@ -54,10 +54,8 @@ private struct EmptyStateView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "atom")
-                .font(.system(size: 56))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(themeManager.theme.accent)
+            AnvilMark(accent: themeManager.theme.accent)
+                .frame(width: 96, height: 96)
             Text("Anvil")
                 .font(.title2.bold())
                 .foregroundStyle(themeManager.theme.textPrimary)
